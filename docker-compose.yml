@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sands
+      POSTGRES_PASSWORD: sands
+      POSTGRES_DB: sands
+    ports:
+      - "5432:5432"
+    volumes:
+      - sands-db:/var/lib/postgresql/data
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://sands:sands@db:5432/sands
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./app:/app/app
+      - ./migrations:/app/migrations
+
+volumes:
+  sands-db:

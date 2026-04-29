@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Properties</h1>
+
+<section class="bg-white rounded-lg shadow p-6 mb-6">
+  <form method="post" action="/properties" class="flex gap-3 items-end">
+    <label class="flex-1">
+      <span class="block text-sm text-slate-600">Property name</span>
+      <input name="name" required class="w-full border rounded px-2 py-1">
+    </label>
+    <label class="flex-1">
+      <span class="block text-sm text-slate-600">Drive folder ID (optional)</span>
+      <input name="drive_folder_id" class="w-full border rounded px-2 py-1">
+    </label>
+    <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Add</button>
+  </form>
+</section>
+
+<section class="bg-white rounded-lg shadow p-6">
+  {% if properties %}
+    <ul class="divide-y">
+      {% for p in properties %}
+        <li class="py-2 flex items-center justify-between">
+          <span>{{ p.name }}</span>
+          <form method="post" action="/properties/{{ p.id }}/delete">
+            <button class="text-sm text-red-600 hover:underline">delete</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-slate-500">No properties yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

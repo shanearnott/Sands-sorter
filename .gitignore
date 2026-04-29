@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+*.sqlite
+*.sqlite3
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+node_modules/
+app/web/static/dist/
+*.token.json
+credentials.json

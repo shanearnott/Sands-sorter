@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Dashboard</h1>
+
+<section class="bg-white rounded-lg shadow p-6 mb-6">
+  <h2 class="font-semibold mb-3">Recent documents</h2>
+  {% if recent %}
+    <table class="w-full text-sm">
+      <thead class="text-slate-500 text-left">
+        <tr>
+          <th class="py-2">When</th>
+          <th>File</th>
+          <th>Path</th>
+          <th>Source</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in recent %}
+          <tr class="border-t">
+            <td class="py-2 text-slate-500">{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ d.original_filename }}</td>
+            <td class="text-slate-600">{{ d.drive_path or '—' }}</td>
+            <td>{{ d.classifier.value }}</td>
+            <td>
+              {% if d.status.value == 'filed' %}
+                <span class="text-green-700">filed</span>
+              {% elif d.status.value == 'unsorted' %}
+                <span class="text-amber-700">unsorted</span>
+              {% else %}
+                <span class="text-red-700">{{ d.status.value }}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-slate-500">No documents filed yet. Try the
+      <a class="text-blue-600 hover:underline" href="/upload">manual upload</a>.
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

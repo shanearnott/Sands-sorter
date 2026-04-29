@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Categories</h1>
+
+<section class="bg-white rounded-lg shadow p-6 mb-6">
+  <form method="post" action="/categories" class="flex gap-3 items-end">
+    <label class="flex-1">
+      <span class="block text-sm text-slate-600">Category name</span>
+      <input name="name" required class="w-full border rounded px-2 py-1">
+    </label>
+    <label class="w-28">
+      <span class="block text-sm text-slate-600">Sort order</span>
+      <input name="sort_order" type="number" value="0" class="w-full border rounded px-2 py-1">
+    </label>
+    <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Add</button>
+  </form>
+</section>
+
+<section class="bg-white rounded-lg shadow p-6">
+  {% if categories %}
+    <ul class="divide-y">
+      {% for c in categories %}
+        <li class="py-2 flex items-center justify-between">
+          <span>{{ c.name }} <span class="text-slate-400 text-sm">({{ c.sort_order }})</span></span>
+          <form method="post" action="/categories/{{ c.id }}/delete">
+            <button class="text-sm text-red-600 hover:underline">delete</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-slate-500">No categories yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
