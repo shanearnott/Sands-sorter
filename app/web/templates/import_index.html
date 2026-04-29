@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Import · Sands-sorter{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Bulk import</h1>
+
+<section class="bg-white rounded-lg shadow p-6 mb-6 max-w-2xl">
+  <h2 class="font-semibold mb-2">Start a new import</h2>
+  <p class="text-sm text-slate-600 mb-3">
+    Point the wizard at a folder of legacy bills. It walks the tree, OCRs each
+    PDF/image, and either auto-files high-confidence matches or parks them for
+    you to review. Originals are <strong>copied</strong> — the source folder
+    is left untouched.
+  </p>
+  <form method="post" action="/import" class="grid grid-cols-[8rem_1fr_auto] gap-3 items-end">
+    <label>
+      <span class="block text-sm text-slate-600">Source kind</span>
+      <select name="source_kind" class="w-full border rounded px-2 py-1">
+        <option value="local">Local path</option>
+        <option value="drive">Drive folder ID</option>
+      </select>
+    </label>
+    <label>
+      <span class="block text-sm text-slate-600">Source reference</span>
+      <input name="source_ref" required placeholder="/path/to/legacy/bills or 0AAB...DriveFolderId"
+             class="w-full border rounded px-2 py-1">
+    </label>
+    <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Start</button>
+  </form>
+</section>
+
+<section class="bg-white rounded-lg shadow p-6">
+  <h2 class="font-semibold mb-3">Recent jobs</h2>
+  {% if jobs %}
+    <table class="w-full text-sm">
+      <thead class="text-slate-500 text-left">
+        <tr>
+          <th class="py-2">Started</th>
+          <th>Source</th>
+          <th>Status</th>
+          <th class="text-right">Total</th>
+          <th class="text-right">Copied</th>
+          <th class="text-right">Awaiting</th>
+          <th class="text-right">Skipped</th>
+          <th class="text-right">Errors</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+          <tr class="border-t">
+            <td class="py-2 text-slate-500">{{ (job.started_at or job.created_at).strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ job.source_kind.value }}: <span class="text-slate-600">{{ job.source_ref }}</span></td>
+            <td>{{ job.status.value }}</td>
+            <td class="text-right">{{ job.total_count }}</td>
+            <td class="text-right text-green-700">{{ job.copied_count }}</td>
+            <td class="text-right text-amber-700">{{ job.awaiting_count }}</td>
+            <td class="text-right text-slate-500">{{ job.skipped_count }}</td>
+            <td class="text-right text-red-700">{{ job.error_count }}</td>
+            <td><a href="/import/{{ job.id }}" class="text-blue-600 hover:underline">open</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-slate-500">No jobs yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

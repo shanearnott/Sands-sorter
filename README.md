@@ -12,18 +12,25 @@ reassign misfiles, and a small web UI lets you train classification rules.
 
 ## Status
 
-This branch contains **M1** of the plan in
+This branch contains **M1 and M2** of the plan in
 `/root/.claude/plans/1-i-have-subscription-piped-candle.md`:
 
-- FastAPI app skeleton with Google OAuth login (allowlist)
-- Postgres schema + Alembic migration covering all M2-M4 tables, with a
-  unified `scopes` table (kind = property | car | life) and a seeded Life
-  singleton
-- Properties, Cars, Life, and Categories pages
-- Drive uploader (idempotent folder chain + upload), kind-aware path builder
-- Manual `/upload` endpoint that hashes, dedups, and files to Drive
-- Unit tests for hashing, kind-aware path building (incl. Unsorted fallback),
-  and the rules engine
+**M1 (foundation):**
+- FastAPI app skeleton with Google OAuth login (allowlist).
+- Postgres schema + Alembic migrations covering scopes/categories/vendors/rules/sources/processed_documents/document_extractions/reassignments/summary_runs.
+- Unified `scopes` table (kind = property | car | life), with a seeded Life singleton and a `country` flag (AU | US) per scope that drives the financial-year folder.
+- Properties, Cars, Life, and Categories pages.
+- Drive uploader (idempotent folder chain + upload), FY-aware path builder.
+- Manual `/upload` that hashes, dedups, and files to Drive.
+
+**M2 (bulk import workhorse):**
+- `direction` (expense | income) on rules and documents.
+- Document AI Invoice Parser wrapper → `document_extractions` (amount, currency, doc_date, due_date, counterparty).
+- Rules engine + Anthropic Claude fallback (structured outputs + prompt caching on the scope/category catalog).
+- Recursive importer with `LocalTreeSource` (path on disk) and `DriveTreeSource` (Drive folder).
+- `/import` wizard — start a job, process pending items in batches, decide on awaiting items (with optional "save as rule"). Originals are copied; the source folder is left untouched.
+- `/rules` CRUD, `/moves` recent-documents view.
+- 53 unit tests covering hashing, FY math, kind-aware path building, rules engine, Document AI extraction parsing, LLM JSON parsing, classifier pipeline, source iterators, and the wizard end-to-end.
 
 Later milestones (Dropbox poller, OCR, rules + LLM classifier, Gmail pollers,
 daily digest, full training UI) live as stubs alongside the M1 code.
@@ -56,12 +63,13 @@ app/
   db.py               SQLAlchemy session
   models.py           ORM models
   auth.py             Google OAuth (single-user/small allowlist)
-  drive/              Google Drive uploader + path helpers
-  pollers/            Gmail + Dropbox source pollers (M2/M3)
-  ocr/                Document AI (M2)
-  classifier/         Rules engine + LLM fallback + pipeline (M2/M3)
+  drive/              Drive uploader + FY-aware path helpers
+  extraction/         Document AI Invoice Parser wrapper
+  classifier/         Rules engine + Claude fallback + pipeline
+  importer/           TreeSource iterators + ImportJob orchestration
+  pollers/            Gmail + Dropbox source pollers (M3)
   summary/            Daily/weekly digest (M3)
-  worker/             CLI for Cloud Scheduler (M2/M3)
+  worker/             CLI for Cloud Scheduler (M3)
   web/                Routes + Jinja templates
 migrations/           Alembic
 tests/                pytest

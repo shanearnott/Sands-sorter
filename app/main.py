@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app import auth
 from app.config import get_settings
 from app.utils.logging import configure_logging
+from app.web.import_routes import router as import_router
 from app.web.routes import router as web_router
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     app.include_router(web_router)
+    app.include_router(import_router)
 
     @app.get("/auth/login")
     async def login(request: Request):

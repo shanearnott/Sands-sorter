@@ -4,10 +4,10 @@
 
 <section class="bg-white rounded-lg shadow p-6 max-w-xl">
   <p class="text-sm text-slate-600 mb-4">
-    Pick a scope (Property, Car, or Life) and a category. Files land at
-    <code>Properties/&lt;Name&gt;/&lt;Cat&gt;/&lt;Year&gt;/</code>,
-    <code>Cars/&lt;Name&gt;/&lt;Cat&gt;/&lt;Year&gt;/</code>, or
-    <code>Life/&lt;Cat&gt;/&lt;Year&gt;/</code>.
+    Pick a scope (Property, Car, or Life), category, and direction. Files land
+    at <code>&lt;Kind&gt;/&lt;Name?&gt;/&lt;Cat&gt;/FY&lt;YYYY&gt;/</code> with the FY
+    derived from the document's date and the scope's country (AU = 1 Jul start;
+    US = calendar).
   </p>
   <form method="post" enctype="multipart/form-data" action="/upload" class="grid gap-3">
     <label>
@@ -20,7 +20,7 @@
             <optgroup label="{{ s.kind.value|capitalize }}">
             {% set last_kind.value = s.kind %}
           {% endif %}
-          <option value="{{ s.id }}">{{ s.name }}</option>
+          <option value="{{ s.id }}">{{ s.name }} ({{ s.country.value }})</option>
         {% endfor %}
         {% if last_kind.value is not none %}</optgroup>{% endif %}
       </select>
@@ -33,9 +33,18 @@
         {% endfor %}
       </select>
     </label>
+    <fieldset class="flex gap-4">
+      <legend class="text-sm text-slate-600">Direction</legend>
+      <label class="flex items-center gap-1">
+        <input type="radio" name="direction" value="expense" checked> Expense
+      </label>
+      <label class="flex items-center gap-1">
+        <input type="radio" name="direction" value="income"> Income (rent)
+      </label>
+    </fieldset>
     <label>
-      <span class="block text-sm text-slate-600">Year (optional, defaults to current)</span>
-      <input name="year" type="number" min="1900" max="2100" class="w-full border rounded px-2 py-1">
+      <span class="block text-sm text-slate-600">Document date (optional, defaults to today)</span>
+      <input name="doc_date" type="date" class="w-full border rounded px-2 py-1">
     </label>
     <label>
       <span class="block text-sm text-slate-600">File</span>

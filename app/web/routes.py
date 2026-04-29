@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
@@ -20,9 +20,11 @@ from app.models import (
     LIFE_SCOPE_NAME,
     Category,
     Classifier,
+    Direction,
     DocStatus,
     ProcessedDocument,
     Scope,
+    ScopeCountry,
     ScopeKind,
 )
 from app.utils.hashing import sha256_bytes
@@ -102,11 +104,12 @@ def properties_list(
 @router.post("/properties")
 def properties_create(
     name: str = Form(...),
+    country: ScopeCountry = Form(ScopeCountry.AU),
     drive_folder_id: str = Form(""),
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
 ):
-    return _create_scope(db, ScopeKind.property, name, drive_folder_id, "/properties")
+    return _create_scope(db, ScopeKind.property, name, country, drive_folder_id, "/properties")
 
 
 @router.post("/properties/{scope_id}/delete")
@@ -126,11 +129,12 @@ def cars_list(
 @router.post("/cars")
 def cars_create(
     name: str = Form(...),
+    country: ScopeCountry = Form(ScopeCountry.AU),
     drive_folder_id: str = Form(""),
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
 ):
-    return _create_scope(db, ScopeKind.car, name, drive_folder_id, "/cars")
+    return _create_scope(db, ScopeKind.car, name, country, drive_folder_id, "/cars")
 
 
 @router.post("/cars/{scope_id}/delete")
@@ -141,12 +145,24 @@ def cars_delete(
 
 
 def _create_scope(
-    db: Session, kind: ScopeKind, name: str, drive_folder_id: str, redirect_to: str
+    db: Session,
+    kind: ScopeKind,
+    name: str,
+    country: ScopeCountry,
+    drive_folder_id: str,
+    redirect_to: str,
 ):
     name = name.strip()
     if not name:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Name is required")
-    db.add(Scope(kind=kind, name=name, drive_folder_id=drive_folder_id.strip() or None))
+    db.add(
+        Scope(
+            kind=kind,
+            name=name,
+            country=country,
+            drive_folder_id=drive_folder_id.strip() or None,
+        )
+    )
     db.commit()
     return RedirectResponse(url=redirect_to, status_code=302)
 
@@ -165,6 +181,20 @@ def life_view(
 ):
     life = _get_life_scope(db)
     return templates.TemplateResponse("life.html", _ctx(request, life=life))
+
+
+@router.post("/life")
+def life_update(
+    country: ScopeCountry = Form(ScopeCountry.AU),
+    drive_folder_id: str = Form(""),
+    db: Session = Depends(get_db),
+    _: str = Depends(current_user),
+):
+    life = _get_life_scope(db)
+    life.country = country
+    life.drive_folder_id = drive_folder_id.strip() or None
+    db.commit()
+    return RedirectResponse(url="/life", status_code=302)
 
 
 # --- Categories CRUD ---
@@ -230,7 +260,8 @@ async def upload_submit(
     request: Request,
     scope_id: int = Form(...),
     category_id: int = Form(...),
-    year: int | None = Form(None),
+    direction: Direction = Form(Direction.expense),
+    doc_date: str = Form(""),
     file: UploadFile = ...,
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
@@ -239,6 +270,17 @@ async def upload_submit(
     cat = db.get(Category, category_id)
     if not scope or not cat:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown scope or category")
+
+    parsed_date: date | None
+    if doc_date:
+        try:
+            parsed_date = date.fromisoformat(doc_date)
+        except ValueError as exc:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "doc_date must be YYYY-MM-DD"
+            ) from exc
+    else:
+        parsed_date = None
 
     data = await file.read()
     if not data:
@@ -252,11 +294,12 @@ async def upload_submit(
             _ctx(request, duplicate=True, doc=existing, link=None),
         )
 
-    path = build_path(
+    path, fy_end = build_path(
         scope_kind=scope.kind,
         scope_name=scope.name,
+        scope_country=scope.country,
         category_name=cat.name,
-        year=year,
+        doc_date=parsed_date,
         filename=file.filename or f"upload-{digest[:8]}",
     )
 
@@ -270,7 +313,9 @@ async def upload_submit(
         classifier=Classifier.manual,
         scope_id=scope.id,
         category_id=cat.id,
-        year=year or datetime.utcnow().year,
+        direction=direction,
+        doc_date=parsed_date,
+        financial_year=fy_end,
         drive_file_id=result.file_id,
         drive_path=result.drive_path,
         confidence=1.0,

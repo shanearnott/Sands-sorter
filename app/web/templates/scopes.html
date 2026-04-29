@@ -4,17 +4,28 @@
 <h1 class="text-2xl font-semibold mb-4">{{ page_title }}</h1>
 
 <section class="bg-white rounded-lg shadow p-6 mb-6">
-  <form method="post" action="{{ route_path }}" class="flex gap-3 items-end">
-    <label class="flex-1">
+  <form method="post" action="{{ route_path }}" class="grid grid-cols-[1fr_8rem_1fr_auto] gap-3 items-end">
+    <label>
       <span class="block text-sm text-slate-600">Name</span>
       <input name="name" required class="w-full border rounded px-2 py-1">
     </label>
-    <label class="flex-1">
+    <label>
+      <span class="block text-sm text-slate-600">Country</span>
+      <select name="country" class="w-full border rounded px-2 py-1">
+        <option value="AU">AU</option>
+        <option value="US">US</option>
+      </select>
+    </label>
+    <label>
       <span class="block text-sm text-slate-600">Drive folder ID (optional)</span>
       <input name="drive_folder_id" class="w-full border rounded px-2 py-1">
     </label>
     <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Add</button>
   </form>
+  <p class="text-xs text-slate-500 mt-2">
+    Country drives the financial-year folder: AU = 1 Jul start (FY end-year),
+    US = calendar year.
+  </p>
 </section>
 
 <section class="bg-white rounded-lg shadow p-6">
@@ -22,7 +33,10 @@
     <ul class="divide-y">
       {% for s in scopes %}
         <li class="py-2 flex items-center justify-between">
-          <span>{{ s.name }}</span>
+          <span>
+            {{ s.name }}
+            <span class="ml-2 text-xs text-slate-500 border rounded px-1.5">{{ s.country.value }}</span>
+          </span>
           <form method="post" action="{{ route_path }}/{{ s.id }}/delete">
             <button class="text-sm text-red-600 hover:underline">delete</button>
           </form>
