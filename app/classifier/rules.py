@@ -12,7 +12,7 @@ from app.models import MatchType, Rule
 @dataclass(frozen=True)
 class RuleHit:
     rule_id: int
-    property_id: int
+    scope_id: int
     category_id: int
     confidence: float
 
@@ -53,7 +53,7 @@ def evaluate(db: Session, inp: RuleInput) -> RuleHit | None:
         if _matches(rule, inp):
             return RuleHit(
                 rule_id=rule.id,
-                property_id=rule.property_id,
+                scope_id=rule.scope_id,
                 category_id=rule.category_id,
                 confidence=rule.confidence,
             )

@@ -4,8 +4,15 @@ import re
 from datetime import datetime
 from pathlib import PurePosixPath
 
-UNSORTED = "Unsorted"
-PROPERTIES_ROOT = "Properties"
+from app.models import ScopeKind
+
+UNSORTED_ROOT = "Unsorted"
+
+KIND_ROOT = {
+    ScopeKind.property: "Properties",
+    ScopeKind.car: "Cars",
+    ScopeKind.life: "Life",
+}
 
 _SAFE = re.compile(r"[^A-Za-z0-9._\- ]+")
 
@@ -19,25 +26,35 @@ def safe_segment(text: str) -> str:
 
 def build_path(
     *,
-    property_name: str | None,
+    scope_kind: ScopeKind | None,
+    scope_name: str | None,
     category_name: str | None,
     year: int | None,
     filename: str,
     now: datetime | None = None,
 ) -> PurePosixPath:
-    """Build the Drive path. Falls back to Unsorted when classification is missing."""
+    """Build the Drive path. Top-level folder depends on the scope kind:
+
+    - property -> Properties/<Name>/<Category>/<Year>/<file>
+    - car      -> Cars/<Name>/<Category>/<Year>/<file>
+    - life     -> Life/<Category>/<Year>/<file>          (singleton, no name)
+    - missing  -> Unsorted/<Year>/<file>                  (low-confidence fallback)
+    """
     when = now or datetime.utcnow()
     yr = year or when.year
 
-    if property_name and category_name:
-        return PurePosixPath(
-            PROPERTIES_ROOT,
-            safe_segment(property_name),
-            safe_segment(category_name),
-            str(yr),
-            filename,
-        )
-    return PurePosixPath(PROPERTIES_ROOT, UNSORTED, str(yr), filename)
+    if scope_kind is None or category_name is None:
+        return PurePosixPath(UNSORTED_ROOT, str(yr), filename)
+
+    root = KIND_ROOT[scope_kind]
+    category = safe_segment(category_name)
+
+    if scope_kind == ScopeKind.life:
+        return PurePosixPath(root, category, str(yr), filename)
+
+    if not scope_name:
+        return PurePosixPath(UNSORTED_ROOT, str(yr), filename)
+    return PurePosixPath(root, safe_segment(scope_name), category, str(yr), filename)
 
 
 def folder_chain(path: PurePosixPath) -> list[str]:

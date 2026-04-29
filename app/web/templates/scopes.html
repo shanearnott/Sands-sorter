@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% block title %}{{ page_title }} · Sands-sorter{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Properties</h1>
+<h1 class="text-2xl font-semibold mb-4">{{ page_title }}</h1>
 
 <section class="bg-white rounded-lg shadow p-6 mb-6">
-  <form method="post" action="/properties" class="flex gap-3 items-end">
+  <form method="post" action="{{ route_path }}" class="flex gap-3 items-end">
     <label class="flex-1">
-      <span class="block text-sm text-slate-600">Property name</span>
+      <span class="block text-sm text-slate-600">Name</span>
       <input name="name" required class="w-full border rounded px-2 py-1">
     </label>
     <label class="flex-1">
@@ -17,19 +18,19 @@
 </section>
 
 <section class="bg-white rounded-lg shadow p-6">
-  {% if properties %}
+  {% if scopes %}
     <ul class="divide-y">
-      {% for p in properties %}
+      {% for s in scopes %}
         <li class="py-2 flex items-center justify-between">
-          <span>{{ p.name }}</span>
-          <form method="post" action="/properties/{{ p.id }}/delete">
+          <span>{{ s.name }}</span>
+          <form method="post" action="{{ route_path }}/{{ s.id }}/delete">
             <button class="text-sm text-red-600 hover:underline">delete</button>
           </form>
         </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p class="text-slate-500">No properties yet.</p>
+    <p class="text-slate-500">No {{ page_title|lower }} yet.</p>
   {% endif %}
 </section>
 {% endblock %}

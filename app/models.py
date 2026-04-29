@@ -29,6 +29,12 @@ class TimestampMixin:
     )
 
 
+class ScopeKind(str, enum.Enum):
+    property = "property"
+    car = "car"
+    life = "life"
+
+
 class SourceKind(str, enum.Enum):
     gmail = "gmail"
     dropbox = "dropbox"
@@ -59,15 +65,21 @@ class DocStatus(str, enum.Enum):
     error = "error"
 
 
-class Property(Base, TimestampMixin):
-    __tablename__ = "properties"
+class Scope(Base, TimestampMixin):
+    """A top-level filing target. Can be a Property (e.g. Beach House), a Car
+    (e.g. Tesla Model Y), or the singleton Life bucket for personal expenses."""
+
+    __tablename__ = "scopes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(120), unique=True)
+    kind: Mapped[ScopeKind] = mapped_column(Enum(ScopeKind, name="scope_kind"))
+    name: Mapped[str] = mapped_column(String(120))
     drive_folder_id: Mapped[str | None] = mapped_column(String(120))
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    rules: Mapped[list["Rule"]] = relationship(back_populates="property")
+    rules: Mapped[list["Rule"]] = relationship(back_populates="scope")
+
+    __table_args__ = (UniqueConstraint("kind", "name", name="uq_scope_kind_name"),)
 
 
 class Category(Base, TimestampMixin):
@@ -85,7 +97,7 @@ class Vendor(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(160), unique=True)
-    default_property_id: Mapped[int | None] = mapped_column(ForeignKey("properties.id"))
+    default_scope_id: Mapped[int | None] = mapped_column(ForeignKey("scopes.id"))
     default_category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"))
     notes: Mapped[str | None] = mapped_column(Text)
 
@@ -96,7 +108,7 @@ class Rule(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     match_type: Mapped[MatchType] = mapped_column(Enum(MatchType, name="match_type"))
     pattern: Mapped[str] = mapped_column(String(500))
-    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id"))
+    scope_id: Mapped[int] = mapped_column(ForeignKey("scopes.id"))
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
     vendor_id: Mapped[int | None] = mapped_column(ForeignKey("vendors.id"))
     priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
@@ -106,7 +118,7 @@ class Rule(Base, TimestampMixin):
         Enum(RuleSource, name="rule_source"), default=RuleSource.manual, nullable=False
     )
 
-    property: Mapped[Property] = relationship(back_populates="rules")
+    scope: Mapped[Scope] = relationship(back_populates="rules")
     category: Mapped[Category] = relationship(back_populates="rules")
 
 
@@ -134,7 +146,7 @@ class ProcessedDocument(Base, TimestampMixin):
     ocr_text: Mapped[str | None] = mapped_column(Text)
     classifier: Mapped[Classifier] = mapped_column(Enum(Classifier, name="classifier"))
     rule_id: Mapped[int | None] = mapped_column(ForeignKey("rules.id"))
-    property_id: Mapped[int | None] = mapped_column(ForeignKey("properties.id"))
+    scope_id: Mapped[int | None] = mapped_column(ForeignKey("scopes.id"))
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"))
     year: Mapped[int | None] = mapped_column(Integer)
     drive_file_id: Mapped[str | None] = mapped_column(String(120))
@@ -150,9 +162,9 @@ class Reassignment(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     document_id: Mapped[int] = mapped_column(ForeignKey("processed_documents.id"))
-    old_property_id: Mapped[int | None] = mapped_column(ForeignKey("properties.id"))
+    old_scope_id: Mapped[int | None] = mapped_column(ForeignKey("scopes.id"))
     old_category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"))
-    new_property_id: Mapped[int] = mapped_column(ForeignKey("properties.id"))
+    new_scope_id: Mapped[int] = mapped_column(ForeignKey("scopes.id"))
     new_category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
     created_rule_id: Mapped[int | None] = mapped_column(ForeignKey("rules.id"))
 
@@ -165,3 +177,6 @@ class DailySummary(Base, TimestampMixin):
     document_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     unsorted_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     message_id: Mapped[str | None] = mapped_column(String(200))
+
+
+LIFE_SCOPE_NAME = "Life"

@@ -17,6 +17,7 @@ depends_on = None
 
 
 def upgrade() -> None:
+    scope_kind = sa.Enum("property", "car", "life", name="scope_kind")
     match_type = sa.Enum(
         "contains", "regex", "sender_email", "filename", name="match_type"
     )
@@ -26,17 +27,19 @@ def upgrade() -> None:
     doc_status = sa.Enum("filed", "unsorted", "error", name="doc_status")
 
     bind = op.get_bind()
-    for enum in (match_type, rule_source, source_kind, classifier, doc_status):
+    for enum in (scope_kind, match_type, rule_source, source_kind, classifier, doc_status):
         enum.create(bind, checkfirst=True)
 
     op.create_table(
-        "properties",
+        "scopes",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("name", sa.String(120), nullable=False, unique=True),
+        sa.Column("kind", scope_kind, nullable=False),
+        sa.Column("name", sa.String(120), nullable=False),
         sa.Column("drive_folder_id", sa.String(120)),
         sa.Column("active", sa.Boolean, nullable=False, server_default=sa.true()),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.UniqueConstraint("kind", "name", name="uq_scope_kind_name"),
     )
 
     op.create_table(
@@ -52,7 +55,7 @@ def upgrade() -> None:
         "vendors",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("name", sa.String(160), nullable=False, unique=True),
-        sa.Column("default_property_id", sa.Integer, sa.ForeignKey("properties.id")),
+        sa.Column("default_scope_id", sa.Integer, sa.ForeignKey("scopes.id")),
         sa.Column("default_category_id", sa.Integer, sa.ForeignKey("categories.id")),
         sa.Column("notes", sa.Text),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
@@ -64,7 +67,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("match_type", match_type, nullable=False),
         sa.Column("pattern", sa.String(500), nullable=False),
-        sa.Column("property_id", sa.Integer, sa.ForeignKey("properties.id"), nullable=False),
+        sa.Column("scope_id", sa.Integer, sa.ForeignKey("scopes.id"), nullable=False),
         sa.Column("category_id", sa.Integer, sa.ForeignKey("categories.id"), nullable=False),
         sa.Column("vendor_id", sa.Integer, sa.ForeignKey("vendors.id")),
         sa.Column("priority", sa.Integer, nullable=False, server_default="100"),
@@ -98,7 +101,7 @@ def upgrade() -> None:
         sa.Column("ocr_text", sa.Text),
         sa.Column("classifier", classifier, nullable=False),
         sa.Column("rule_id", sa.Integer, sa.ForeignKey("rules.id")),
-        sa.Column("property_id", sa.Integer, sa.ForeignKey("properties.id")),
+        sa.Column("scope_id", sa.Integer, sa.ForeignKey("scopes.id")),
         sa.Column("category_id", sa.Integer, sa.ForeignKey("categories.id")),
         sa.Column("year", sa.Integer),
         sa.Column("drive_file_id", sa.String(120)),
@@ -120,10 +123,10 @@ def upgrade() -> None:
             sa.ForeignKey("processed_documents.id"),
             nullable=False,
         ),
-        sa.Column("old_property_id", sa.Integer, sa.ForeignKey("properties.id")),
+        sa.Column("old_scope_id", sa.Integer, sa.ForeignKey("scopes.id")),
         sa.Column("old_category_id", sa.Integer, sa.ForeignKey("categories.id")),
         sa.Column(
-            "new_property_id", sa.Integer, sa.ForeignKey("properties.id"), nullable=False
+            "new_scope_id", sa.Integer, sa.ForeignKey("scopes.id"), nullable=False
         ),
         sa.Column(
             "new_category_id", sa.Integer, sa.ForeignKey("categories.id"), nullable=False
@@ -144,6 +147,11 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
 
+    # Seed the singleton Life scope.
+    op.execute(
+        "INSERT INTO scopes (kind, name, active) VALUES ('life', 'Life', TRUE)"
+    )
+
 
 def downgrade() -> None:
     op.drop_table("daily_summaries")
@@ -153,7 +161,14 @@ def downgrade() -> None:
     op.drop_table("rules")
     op.drop_table("vendors")
     op.drop_table("categories")
-    op.drop_table("properties")
+    op.drop_table("scopes")
     bind = op.get_bind()
-    for name in ("doc_status", "classifier", "source_kind", "rule_source", "match_type"):
+    for name in (
+        "doc_status",
+        "classifier",
+        "source_kind",
+        "rule_source",
+        "match_type",
+        "scope_kind",
+    ):
         sa.Enum(name=name).drop(bind, checkfirst=True)

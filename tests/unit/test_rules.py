@@ -4,27 +4,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.classifier.rules import RuleInput, evaluate
-from app.models import Base, Category, MatchType, Property, Rule
+from app.models import Base, Category, MatchType, Rule, Scope, ScopeKind
 
 
-def _setup() -> tuple[Session, Property, Category]:
+def _setup() -> tuple[Session, Scope, Category]:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     db = Session(engine)
-    prop = Property(name="Beach House")
+    scope = Scope(kind=ScopeKind.property, name="Beach House")
     cat = Category(name="Electricity")
-    db.add_all([prop, cat])
+    db.add_all([scope, cat])
     db.commit()
-    return db, prop, cat
+    return db, scope, cat
 
 
 def test_filename_match_wins():
-    db, prop, cat = _setup()
+    db, scope, cat = _setup()
     db.add(
         Rule(
             match_type=MatchType.filename,
             pattern="origin",
-            property_id=prop.id,
+            scope_id=scope.id,
             category_id=cat.id,
             priority=10,
         )
@@ -35,17 +35,17 @@ def test_filename_match_wins():
         RuleInput(filename="origin_energy_apr.pdf", sender_email=None, ocr_text=None),
     )
     assert hit is not None
-    assert hit.property_id == prop.id
+    assert hit.scope_id == scope.id
 
 
 def test_priority_lower_wins_first():
-    db, prop, cat = _setup()
+    db, scope, cat = _setup()
     db.add_all(
         [
             Rule(
                 match_type=MatchType.contains,
                 pattern="energy",
-                property_id=prop.id,
+                scope_id=scope.id,
                 category_id=cat.id,
                 priority=20,
                 confidence=0.5,
@@ -53,7 +53,7 @@ def test_priority_lower_wins_first():
             Rule(
                 match_type=MatchType.contains,
                 pattern="energy",
-                property_id=prop.id,
+                scope_id=scope.id,
                 category_id=cat.id,
                 priority=10,
                 confidence=0.95,
@@ -67,12 +67,12 @@ def test_priority_lower_wins_first():
 
 
 def test_disabled_rules_are_skipped():
-    db, prop, cat = _setup()
+    db, scope, cat = _setup()
     db.add(
         Rule(
             match_type=MatchType.contains,
             pattern="energy",
-            property_id=prop.id,
+            scope_id=scope.id,
             category_id=cat.id,
             priority=10,
             enabled=False,
@@ -86,12 +86,12 @@ def test_disabled_rules_are_skipped():
 
 
 def test_regex_match_caseless():
-    db, prop, cat = _setup()
+    db, scope, cat = _setup()
     db.add(
         Rule(
             match_type=MatchType.regex,
             pattern=r"acct\s*#\s*\d+",
-            property_id=prop.id,
+            scope_id=scope.id,
             category_id=cat.id,
             priority=5,
         )
@@ -104,12 +104,12 @@ def test_regex_match_caseless():
 
 
 def test_no_match_returns_none():
-    db, prop, cat = _setup()
+    db, scope, cat = _setup()
     db.add(
         Rule(
             match_type=MatchType.contains,
             pattern="nonsense",
-            property_id=prop.id,
+            scope_id=scope.id,
             category_id=cat.id,
         )
     )

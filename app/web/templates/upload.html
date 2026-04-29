@@ -4,17 +4,25 @@
 
 <section class="bg-white rounded-lg shadow p-6 max-w-xl">
   <p class="text-sm text-slate-600 mb-4">
-    Pick a property and category, then a file. We hash it, check for duplicates,
-    upload to <code>Properties/&lt;Property&gt;/&lt;Category&gt;/&lt;Year&gt;/</code>
-    in your Drive root and record it.
+    Pick a scope (Property, Car, or Life) and a category. Files land at
+    <code>Properties/&lt;Name&gt;/&lt;Cat&gt;/&lt;Year&gt;/</code>,
+    <code>Cars/&lt;Name&gt;/&lt;Cat&gt;/&lt;Year&gt;/</code>, or
+    <code>Life/&lt;Cat&gt;/&lt;Year&gt;/</code>.
   </p>
   <form method="post" enctype="multipart/form-data" action="/upload" class="grid gap-3">
     <label>
-      <span class="block text-sm text-slate-600">Property</span>
-      <select name="property_id" required class="w-full border rounded px-2 py-1">
-        {% for p in properties %}
-          <option value="{{ p.id }}">{{ p.name }}</option>
+      <span class="block text-sm text-slate-600">Scope</span>
+      <select name="scope_id" required class="w-full border rounded px-2 py-1">
+        {% set last_kind = namespace(value=None) %}
+        {% for s in scopes %}
+          {% if s.kind != last_kind.value %}
+            {% if last_kind.value is not none %}</optgroup>{% endif %}
+            <optgroup label="{{ s.kind.value|capitalize }}">
+            {% set last_kind.value = s.kind %}
+          {% endif %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
         {% endfor %}
+        {% if last_kind.value is not none %}</optgroup>{% endif %}
       </select>
     </label>
     <label>

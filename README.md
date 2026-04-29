@@ -3,10 +3,12 @@
 Automated bill scanning, classification, and filing for household property bills.
 
 Watches Gmail attachments and a Dropbox inbox of scanned snail mail, identifies
-the property and spend category, files each document into Google Drive at
-`Properties/<Property>/<Category>/<Year>/`, and emails a daily or weekly digest
-so you can spot-check and reassign anything misfiled. A small web UI lets you
-train classification rules.
+the **scope** (a Property, a Car, or the singleton **Life** bucket for general
+expenses) and spend category, then files each document into Google Drive at
+`Properties/<Name>/<Category>/<Year>/`, `Cars/<Name>/<Category>/<Year>/`, or
+`Life/<Category>/<Year>/`. Anything low-confidence lands in
+`Unsorted/<Year>/`. A daily or weekly digest email lets you spot-check and
+reassign misfiles, and a small web UI lets you train classification rules.
 
 ## Status
 
@@ -14,11 +16,14 @@ This branch contains **M1** of the plan in
 `/root/.claude/plans/1-i-have-subscription-piped-candle.md`:
 
 - FastAPI app skeleton with Google OAuth login (allowlist)
-- Postgres schema + Alembic migration covering all M2-M4 tables
-- Properties and Categories CRUD
-- Drive uploader (idempotent folder chain + upload)
+- Postgres schema + Alembic migration covering all M2-M4 tables, with a
+  unified `scopes` table (kind = property | car | life) and a seeded Life
+  singleton
+- Properties, Cars, Life, and Categories pages
+- Drive uploader (idempotent folder chain + upload), kind-aware path builder
 - Manual `/upload` endpoint that hashes, dedups, and files to Drive
-- Unit tests for hashing, path building, and the rules engine
+- Unit tests for hashing, kind-aware path building (incl. Unsorted fallback),
+  and the rules engine
 
 Later milestones (Dropbox poller, OCR, rules + LLM classifier, Gmail pollers,
 daily digest, full training UI) live as stubs alongside the M1 code.

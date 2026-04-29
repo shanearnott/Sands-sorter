@@ -17,11 +17,13 @@ from app.drive.credentials import load_drive_credentials
 from app.drive.paths import build_path
 from app.drive.uploader import DriveUploader
 from app.models import (
+    LIFE_SCOPE_NAME,
     Category,
     Classifier,
     DocStatus,
     ProcessedDocument,
-    Property,
+    Scope,
+    ScopeKind,
 )
 from app.utils.hashing import sha256_bytes
 
@@ -41,6 +43,17 @@ def _ctx(request: Request, **extra) -> dict:
     }
 
 
+def _get_life_scope(db: Session) -> Scope:
+    """Return the Life singleton, creating it if absent (e.g. on a fresh dev DB)."""
+    life = db.scalar(select(Scope).where(Scope.kind == ScopeKind.life))
+    if life is None:
+        life = Scope(kind=ScopeKind.life, name=LIFE_SCOPE_NAME, active=True)
+        db.add(life)
+        db.commit()
+        db.refresh(life)
+    return life
+
+
 @router.get("/", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     user = optional_user(request)
@@ -57,41 +70,101 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("dashboard.html", _ctx(request, recent=recent))
 
 
-# --- Properties CRUD ---
+# --- Scopes (Properties + Cars share a single CRUD page, kind-filtered) ---
+
+def _scope_list_response(
+    request: Request, db: Session, kind: ScopeKind, page_title: str, route_path: str
+):
+    items = list(
+        db.scalars(
+            select(Scope).where(Scope.kind == kind).order_by(Scope.name)
+        )
+    )
+    return templates.TemplateResponse(
+        "scopes.html",
+        _ctx(
+            request,
+            kind=kind,
+            scopes=items,
+            page_title=page_title,
+            route_path=route_path,
+        ),
+    )
+
 
 @router.get("/properties", response_class=HTMLResponse)
 def properties_list(
     request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
-    items = list(db.scalars(select(Property).order_by(Property.name)))
-    return templates.TemplateResponse("properties.html", _ctx(request, properties=items))
+    return _scope_list_response(request, db, ScopeKind.property, "Properties", "/properties")
 
 
-@router.post("/properties", response_class=HTMLResponse)
+@router.post("/properties")
 def properties_create(
     name: str = Form(...),
     drive_folder_id: str = Form(""),
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
 ):
+    return _create_scope(db, ScopeKind.property, name, drive_folder_id, "/properties")
+
+
+@router.post("/properties/{scope_id}/delete")
+def properties_delete(
+    scope_id: int, db: Session = Depends(get_db), _: str = Depends(current_user)
+):
+    return _delete_scope(db, scope_id, ScopeKind.property, "/properties")
+
+
+@router.get("/cars", response_class=HTMLResponse)
+def cars_list(
+    request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
+):
+    return _scope_list_response(request, db, ScopeKind.car, "Cars", "/cars")
+
+
+@router.post("/cars")
+def cars_create(
+    name: str = Form(...),
+    drive_folder_id: str = Form(""),
+    db: Session = Depends(get_db),
+    _: str = Depends(current_user),
+):
+    return _create_scope(db, ScopeKind.car, name, drive_folder_id, "/cars")
+
+
+@router.post("/cars/{scope_id}/delete")
+def cars_delete(
+    scope_id: int, db: Session = Depends(get_db), _: str = Depends(current_user)
+):
+    return _delete_scope(db, scope_id, ScopeKind.car, "/cars")
+
+
+def _create_scope(
+    db: Session, kind: ScopeKind, name: str, drive_folder_id: str, redirect_to: str
+):
     name = name.strip()
     if not name:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Name is required")
-    p = Property(name=name, drive_folder_id=drive_folder_id.strip() or None)
-    db.add(p)
+    db.add(Scope(kind=kind, name=name, drive_folder_id=drive_folder_id.strip() or None))
     db.commit()
-    return RedirectResponse(url="/properties", status_code=302)
+    return RedirectResponse(url=redirect_to, status_code=302)
 
 
-@router.post("/properties/{prop_id}/delete")
-def properties_delete(
-    prop_id: int, db: Session = Depends(get_db), _: str = Depends(current_user)
-):
-    p = db.get(Property, prop_id)
-    if p:
-        db.delete(p)
+def _delete_scope(db: Session, scope_id: int, expected_kind: ScopeKind, redirect_to: str):
+    scope = db.get(Scope, scope_id)
+    if scope and scope.kind == expected_kind:
+        db.delete(scope)
         db.commit()
-    return RedirectResponse(url="/properties", status_code=302)
+    return RedirectResponse(url=redirect_to, status_code=302)
+
+
+@router.get("/life", response_class=HTMLResponse)
+def life_view(
+    request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
+):
+    life = _get_life_scope(db)
+    return templates.TemplateResponse("life.html", _ctx(request, life=life))
 
 
 # --- Categories CRUD ---
@@ -104,7 +177,7 @@ def categories_list(
     return templates.TemplateResponse("categories.html", _ctx(request, categories=items))
 
 
-@router.post("/categories", response_class=HTMLResponse)
+@router.post("/categories")
 def categories_create(
     name: str = Form(...),
     sort_order: int = Form(0),
@@ -130,34 +203,42 @@ def categories_delete(
     return RedirectResponse(url="/categories", status_code=302)
 
 
-# --- Manual upload (M1 happy path: pick property + category, file goes to Drive) ---
+# --- Manual upload ---
 
 @router.get("/upload", response_class=HTMLResponse)
 def upload_form(
     request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
-    properties = list(db.scalars(select(Property).where(Property.active.is_(True)).order_by(Property.name)))
-    categories = list(db.scalars(select(Category).order_by(Category.sort_order, Category.name)))
+    _get_life_scope(db)  # ensure singleton exists
+    scopes = list(
+        db.scalars(
+            select(Scope)
+            .where(Scope.active.is_(True))
+            .order_by(Scope.kind, Scope.name)
+        )
+    )
+    categories = list(
+        db.scalars(select(Category).order_by(Category.sort_order, Category.name))
+    )
     return templates.TemplateResponse(
-        "upload.html",
-        _ctx(request, properties=properties, categories=categories),
+        "upload.html", _ctx(request, scopes=scopes, categories=categories)
     )
 
 
 @router.post("/upload", response_class=HTMLResponse)
 async def upload_submit(
     request: Request,
-    property_id: int = Form(...),
+    scope_id: int = Form(...),
     category_id: int = Form(...),
     year: int | None = Form(None),
     file: UploadFile = ...,
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
 ):
-    prop = db.get(Property, property_id)
+    scope = db.get(Scope, scope_id)
     cat = db.get(Category, category_id)
-    if not prop or not cat:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown property or category")
+    if not scope or not cat:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown scope or category")
 
     data = await file.read()
     if not data:
@@ -168,15 +249,12 @@ async def upload_submit(
     if existing:
         return templates.TemplateResponse(
             "upload_result.html",
-            _ctx(
-                request,
-                duplicate=True,
-                doc=existing,
-            ),
+            _ctx(request, duplicate=True, doc=existing, link=None),
         )
 
     path = build_path(
-        property_name=prop.name,
+        scope_kind=scope.kind,
+        scope_name=scope.name,
         category_name=cat.name,
         year=year,
         filename=file.filename or f"upload-{digest[:8]}",
@@ -190,7 +268,7 @@ async def upload_submit(
         sha256=digest,
         original_filename=file.filename or "",
         classifier=Classifier.manual,
-        property_id=prop.id,
+        scope_id=scope.id,
         category_id=cat.id,
         year=year or datetime.utcnow().year,
         drive_file_id=result.file_id,
