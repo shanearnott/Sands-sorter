@@ -129,13 +129,38 @@ later), and auto-generates a random `internal-api-key` + `session-secret-key`.
 
 ### Populate the secrets
 
+The `drive-token` secret holds an OAuth refresh token that lets the app
+write to Drive *and* read/label Gmail *and* send the digest email. The
+helper script in this repo runs the consent flow for you and either writes
+a JSON file or uploads it straight to Secret Manager:
+
 ```bash
-gcloud secrets versions add drive-token         --data-file=drive_token.json
+# One-shot: get the token AND push it to Secret Manager
+python scripts/auth/get_token.py \
+  --client-secrets ~/Downloads/client_secret.json \
+  --scopes drive,gmail-modify,gmail-send \
+  --upload-to-secret drive-token \
+  --gcp-project your-project
+```
+
+The `client_secret.json` is downloaded from Cloud Console → APIs & Services
+→ Credentials → **Create OAuth client → Desktop**. (That's a different
+client from the one your *web app* uses to log users in.) Re-run the
+helper with `--scopes gmail-modify` against each additional Gmail account
+you want polled, and store under a per-account secret name
+(e.g. `gmail-token-personal`).
+
+The remaining secrets are scalars:
+
+```bash
 gcloud secrets versions add anthropic-api-key   --data-file=- <<<'sk-ant-...'
 gcloud secrets versions add dropbox-refresh-token --data-file=- <<<'sl.your-token'
 gcloud secrets versions add oauth-client-id     --data-file=- <<<'...apps.googleusercontent.com'
 gcloud secrets versions add oauth-client-secret --data-file=- <<<'GOCSPX-...'
 ```
+
+The last two are for the **web** OAuth client (user login) — a separate
+OAuth client from the desktop one you used above.
 
 ### Build + deploy
 

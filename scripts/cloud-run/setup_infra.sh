@@ -114,8 +114,14 @@ cat <<MSG
 Bootstrap complete.
 
 Next:
-  1. Populate these Secret Manager entries with real values:
-       gcloud secrets versions add drive-token         --data-file=drive_token.json
+  1. Get the Drive+Gmail OAuth token (helper runs the consent flow):
+       python scripts/auth/get_token.py \\
+         --client-secrets ~/Downloads/client_secret.json \\
+         --scopes drive,gmail-modify,gmail-send \\
+         --upload-to-secret drive-token \\
+         --gcp-project $PROJECT
+
+     Populate the rest:
        gcloud secrets versions add anthropic-api-key   --data-file=- <<<"sk-ant-..."
        gcloud secrets versions add dropbox-refresh-token --data-file=- <<<"sl.your-token"
        gcloud secrets versions add oauth-client-id     --data-file=- <<<"...apps.googleusercontent.com"
