@@ -349,4 +349,15 @@ class PdfPassword(Base, TimestampMixin):
     priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
 
 
+class AppConfig(Base, TimestampMixin):
+    """Runtime-editable settings written from the /settings page. Overlays
+    the env-loaded `Settings` for the keys listed in
+    `app.config.RUNTIME_OVERLAY_KEYS`."""
+
+    __tablename__ = "app_config"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+
 PERSONAL_SCOPE_NAME = "Personal"

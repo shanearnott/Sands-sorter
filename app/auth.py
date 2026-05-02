@@ -4,7 +4,9 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import HTTPException, Request, status
 from starlette.responses import RedirectResponse
 
-from app.config import get_settings
+from app.config import get_settings, is_local_mode, runtime_value
+
+LOCAL_USER_EMAIL = "local@local"
 
 oauth = OAuth()
 oauth.register(
@@ -14,21 +16,30 @@ oauth.register(
 )
 
 
+def _allowed_emails() -> list[str]:
+    raw = runtime_value("allowed_emails")
+    return [e.strip().lower() for e in raw.split(",") if e.strip()]
+
+
 def _client():
-    settings = get_settings()
-    if not (settings.google_oauth_client_id and settings.google_oauth_client_secret):
+    client_id = runtime_value("google_oauth_client_id")
+    client_secret = runtime_value("google_oauth_client_secret")
+    if not (client_id and client_secret):
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE, "Google OAuth not configured"
         )
     google = oauth.create_client("google")
-    google.client_id = settings.google_oauth_client_id
-    google.client_secret = settings.google_oauth_client_secret
+    google.client_id = client_id
+    google.client_secret = client_secret
     return google
 
 
 async def login(request: Request) -> RedirectResponse:
-    settings = get_settings()
-    return await _client().authorize_redirect(request, settings.google_oauth_redirect_url)
+    if is_local_mode():
+        # No Google OAuth configured — there is no login flow to start.
+        return RedirectResponse(url="/settings", status_code=302)
+    redirect_url = runtime_value("google_oauth_redirect_url") or get_settings().google_oauth_redirect_url
+    return await _client().authorize_redirect(request, redirect_url)
 
 
 async def callback(request: Request) -> RedirectResponse:
@@ -42,7 +53,7 @@ async def callback(request: Request) -> RedirectResponse:
     if not email:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "No email in OIDC response")
 
-    allowlist = get_settings().allowed_emails_list
+    allowlist = _allowed_emails()
     if allowlist and email not in allowlist:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f"{email} is not authorised")
 
@@ -57,6 +68,8 @@ def logout(request: Request) -> RedirectResponse:
 
 
 def current_user(request: Request) -> str:
+    if is_local_mode():
+        return LOCAL_USER_EMAIL
     email = request.session.get("user_email")
     if not email:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not signed in")
@@ -64,4 +77,6 @@ def current_user(request: Request) -> str:
 
 
 def optional_user(request: Request) -> str | None:
+    if is_local_mode():
+        return LOCAL_USER_EMAIL
     return request.session.get("user_email")

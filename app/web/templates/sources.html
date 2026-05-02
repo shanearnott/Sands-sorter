@@ -1,69 +1,93 @@
 {% extends "base.html" %}
 {% block title %}Sources · Sands-sorter{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Sources</h1>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Sources</h1>
+    <p class="page-subtitle">
+      Each enabled source is polled every 15 minutes (or on demand via
+      <code>python -m app.worker poll</code>).
+    </p>
+  </div>
+</div>
 
-<section class="bg-white rounded-lg shadow p-6 mb-6">
-  <p class="text-sm text-slate-600 mb-3">
-    Each enabled source is polled every 15 minutes (or on demand via
-    <code>python -m app.worker poll</code>).
-    Demo mode: the
-    <code>DEMO_MAILBOX_PATH</code>
-    {% if demo_mailbox %}<span class="text-green-700">is configured</span>{% else %}<span class="text-slate-400">is not set</span>{% endif %};
-    <code>DEMO_DROPBOX_PATH</code>
-    {% if demo_dropbox %}<span class="text-green-700">is configured</span>{% else %}<span class="text-slate-400">is not set</span>{% endif %}.
-  </p>
-  <form method="post" action="/sources" class="grid grid-cols-[8rem_1fr_1fr_auto] gap-2 items-end">
-    <label><span class="block text-xs text-slate-500">Kind</span>
-      <select name="kind" class="w-full border rounded px-2 py-1 text-sm">
-        {% for k in kinds %}<option value="{{ k.value }}">{{ k.value }}</option>{% endfor %}
-      </select>
-    </label>
-    <label><span class="block text-xs text-slate-500">Label</span>
-      <input name="label" required class="w-full border rounded px-2 py-1 text-sm"
-             placeholder="personal@gmail or main"></label>
-    <label><span class="block text-xs text-slate-500">OAuth secret name (optional)</span>
-      <input name="oauth_secret_name" class="w-full border rounded px-2 py-1 text-sm"
-             placeholder="path/to/token.json or Secret Manager id"></label>
-    <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 text-sm">Add</button>
-  </form>
+<div class="alert-info mb-6">
+  Demo mode:
+  <code>DEMO_MAILBOX_PATH</code>
+  {% if demo_mailbox %}<span class="badge badge-success">configured</span>{% else %}<span class="badge badge-neutral">not set</span>{% endif %};
+  <code>DEMO_DROPBOX_PATH</code>
+  {% if demo_dropbox %}<span class="badge badge-success">configured</span>{% else %}<span class="badge badge-neutral">not set</span>{% endif %}.
+</div>
+
+<section class="card mb-6">
+  <div class="card-header">
+    <h2 class="card-title">Add source</h2>
+  </div>
+  <div class="card-body">
+    <form method="post" action="/sources" class="grid grid-cols-[8rem_1fr_1fr_auto] gap-3 items-end">
+      <div class="field">
+        <label class="label">Kind</label>
+        <select name="kind">
+          {% for k in kinds %}<option value="{{ k.value }}">{{ k.value }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">Label</label>
+        <input name="label" required placeholder="personal@gmail or main">
+      </div>
+      <div class="field">
+        <label class="label">OAuth secret name</label>
+        <input name="oauth_secret_name" placeholder="path/to/token.json or Secret Manager id">
+      </div>
+      <button class="btn btn-primary" type="submit">Add</button>
+    </form>
+  </div>
 </section>
 
-<section class="bg-white rounded-lg shadow p-6">
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Configured sources</h2>
+  </div>
   {% if sources %}
-    {% for s in sources %}
-      <div class="border-t first:border-0 py-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="font-medium">{{ s.kind.value }} : {{ s.label }}</span>
-            {% if not s.enabled %}
-              <span class="ml-2 text-xs text-slate-500">disabled</span>
-            {% endif %}
-            {% if s.last_polled_at %}
-              <span class="ml-2 text-xs text-slate-500">last polled {{ s.last_polled_at.strftime('%Y-%m-%d %H:%M') }}</span>
-            {% endif %}
-            {% if s.last_error %}
-              <span class="ml-2 text-xs text-red-700">error: {{ s.last_error }}</span>
-            {% endif %}
+    <div>
+      {% for s in sources %}
+        <div class="card-section p-6">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-medium">{{ s.kind.value }} : {{ s.label }}</span>
+              {% if not s.enabled %}
+                <span class="badge badge-neutral">disabled</span>
+              {% else %}
+                <span class="badge badge-success">enabled</span>
+              {% endif %}
+              {% if s.last_polled_at %}
+                <span class="text-xs text-slate-500">last polled {{ s.last_polled_at.strftime('%Y-%m-%d %H:%M') }}</span>
+              {% endif %}
+              {% if s.last_error %}
+                <span class="badge badge-danger">error: {{ s.last_error }}</span>
+              {% endif %}
+            </div>
+            <form method="post" action="/sources/{{ s.id }}/toggle">
+              <button class="link-action-muted" type="submit">
+                {{ 'disable' if s.enabled else 'enable' }}
+              </button>
+            </form>
           </div>
-          <form method="post" action="/sources/{{ s.id }}/toggle">
-            <button class="text-xs text-blue-600 hover:underline">
-              {{ 'disable' if s.enabled else 'enable' }}
-            </button>
+          <form method="post" action="/sources/{{ s.id }}/allowlist" class="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <div class="field">
+              <label class="label">Body-PDF allowlist (one sender per line)</label>
+              <textarea name="body_allowlist" rows="3" class="input-mono">{{ (s.body_allowlist or []) | join('\n') }}</textarea>
+            </div>
+            <button class="btn btn-secondary" type="submit">Save</button>
           </form>
         </div>
-        <form method="post" action="/sources/{{ s.id }}/allowlist" class="mt-3 grid grid-cols-[1fr_auto] gap-2 items-end">
-          <label class="block">
-            <span class="block text-xs text-slate-500">Body-PDF allowlist (one sender per line)</span>
-            <textarea name="body_allowlist" rows="3"
-              class="w-full border rounded px-2 py-1 text-sm font-mono">{{ (s.body_allowlist or []) | join('\n') }}</textarea>
-          </label>
-          <button class="bg-slate-700 text-white px-3 py-1.5 rounded hover:bg-slate-800 text-sm">Save</button>
-        </form>
-      </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
   {% else %}
-    <p class="text-slate-500">No sources configured. Add one above, or set <code>DEMO_DROPBOX_ROOT</code> / <code>DEMO_MAILBOX_ROOT</code> to auto-seed demo sources on the next <code>poll</code>.</p>
+    <div class="empty-state">
+      No sources configured. Add one above, or set <code>DEMO_DROPBOX_ROOT</code> /
+      <code>DEMO_MAILBOX_ROOT</code> to auto-seed demo sources on the next <code>poll</code>.
+    </div>
   {% endif %}
 </section>
 {% endblock %}

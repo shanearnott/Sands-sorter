@@ -1,84 +1,93 @@
 {% extends "base.html" %}
 {% block title %}Import · Sands-sorter{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Bulk import</h1>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Bulk import</h1>
+    <p class="page-subtitle">Point the wizard at a folder of legacy bills.</p>
+  </div>
+</div>
 
-<section class="bg-white rounded-lg shadow p-6 mb-6 max-w-2xl">
-  <h2 class="font-semibold mb-2">Start a new import</h2>
-  <p class="text-sm text-slate-600 mb-3">
-    Point the wizard at a folder of legacy bills. It walks the tree, OCRs each
-    PDF/image, and either auto-files high-confidence matches or parks them for
-    you to review. Originals are <strong>copied</strong> — the source folder
-    is left untouched.
-  </p>
-  <form method="post" action="/import" class="grid gap-3">
-    <div class="grid grid-cols-[8rem_1fr_auto] gap-3 items-end">
-      <label>
-        <span class="block text-sm text-slate-600">Source kind</span>
-        <select name="source_kind" class="w-full border rounded px-2 py-1">
-          <option value="local">Local path</option>
-          <option value="drive">Drive folder ID</option>
-        </select>
+<section class="card mb-6 max-w-2xl">
+  <div class="card-header">
+    <h2 class="card-title">Start a new import</h2>
+  </div>
+  <div class="card-body">
+    <p class="text-sm text-slate-600 mb-4">
+      Walks the tree, OCRs each PDF/image, and either auto-files high-confidence
+      matches or parks them for review. Originals are <strong>copied</strong> —
+      the source folder is left untouched.
+    </p>
+    <form method="post" action="/import" class="space-y-4">
+      <div class="grid grid-cols-[8rem_1fr_auto] gap-3 items-end">
+        <div class="field">
+          <label class="label-lg">Source kind</label>
+          <select name="source_kind">
+            <option value="local">Local path</option>
+            <option value="drive">Drive folder ID</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label-lg">Source reference</label>
+          <input name="source_ref" required placeholder="/path/to/legacy/bills or 0AAB...DriveFolderId">
+        </div>
+        <button class="btn btn-primary" type="submit">Start</button>
+      </div>
+      <label class="flex items-start gap-2 text-sm text-slate-600">
+        <input type="checkbox" name="dry_run" value="true" class="bare mt-0.5">
+        <span>
+          <strong>Preview only</strong> — run OCR + classification on every file and
+          show the proposed Drive path, but don't upload anything. Approving an
+          item from the awaiting queue still does the real upload.
+        </span>
       </label>
-      <label>
-        <span class="block text-sm text-slate-600">Source reference</span>
-        <input name="source_ref" required placeholder="/path/to/legacy/bills or 0AAB...DriveFolderId"
-               class="w-full border rounded px-2 py-1">
-      </label>
-      <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Start</button>
-    </div>
-    <label class="flex items-start gap-2 text-sm text-slate-600">
-      <input type="checkbox" name="dry_run" value="true" class="mt-0.5">
-      <span>
-        <strong>Preview only</strong> — run OCR + classification on every file
-        and show you the proposed Drive path, but don't upload anything.
-        Approving an item from the awaiting queue still does the real upload.
-      </span>
-    </label>
-  </form>
+    </form>
+  </div>
 </section>
 
-<section class="bg-white rounded-lg shadow p-6">
-  <h2 class="font-semibold mb-3">Recent jobs</h2>
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Recent jobs</h2>
+  </div>
   {% if jobs %}
-    <table class="w-full text-sm">
-      <thead class="text-slate-500 text-left">
+    <table class="table">
+      <thead>
         <tr>
-          <th class="py-2">Started</th>
+          <th>Started</th>
           <th>Source</th>
           <th>Status</th>
-          <th class="text-right">Total</th>
-          <th class="text-right">Copied</th>
-          <th class="text-right">Awaiting</th>
-          <th class="text-right">Skipped</th>
-          <th class="text-right">Errors</th>
+          <th class="num">Total</th>
+          <th class="num">Copied</th>
+          <th class="num">Awaiting</th>
+          <th class="num">Skipped</th>
+          <th class="num">Errors</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {% for job in jobs %}
-          <tr class="border-t">
-            <td class="py-2 text-slate-500">{{ (job.started_at or job.created_at).strftime('%Y-%m-%d %H:%M') }}</td>
+          <tr>
+            <td class="text-slate-500 whitespace-nowrap">{{ (job.started_at or job.created_at).strftime('%Y-%m-%d %H:%M') }}</td>
             <td>
-              {{ job.source_kind.value }}:
+              <span class="badge badge-neutral">{{ job.source_kind.value }}</span>
               <span class="text-slate-600">{{ job.source_ref }}</span>
               {% if job.dry_run %}
-                <span class="ml-1 text-xs uppercase tracking-wide text-amber-700 border border-amber-300 rounded px-1.5">preview</span>
+                <span class="badge badge-warning">preview</span>
               {% endif %}
             </td>
-            <td>{{ job.status.value }}</td>
-            <td class="text-right">{{ job.total_count }}</td>
-            <td class="text-right text-green-700">{{ job.copied_count }}</td>
-            <td class="text-right text-amber-700">{{ job.awaiting_count }}</td>
-            <td class="text-right text-slate-500">{{ job.skipped_count }}</td>
-            <td class="text-right text-red-700">{{ job.error_count }}</td>
-            <td><a href="/import/{{ job.id }}" class="text-blue-600 hover:underline">open</a></td>
+            <td><span class="badge badge-info">{{ job.status.value }}</span></td>
+            <td class="num">{{ job.total_count }}</td>
+            <td class="num text-emerald-700">{{ job.copied_count }}</td>
+            <td class="num text-amber-700">{{ job.awaiting_count }}</td>
+            <td class="num text-slate-500">{{ job.skipped_count }}</td>
+            <td class="num text-rose-700">{{ job.error_count }}</td>
+            <td><a href="/import/{{ job.id }}" class="link-action">open →</a></td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   {% else %}
-    <p class="text-slate-500">No jobs yet.</p>
+    <div class="empty-state">No jobs yet.</div>
   {% endif %}
 </section>
 {% endblock %}

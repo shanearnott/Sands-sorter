@@ -1,28 +1,35 @@
 {% extends "base.html" %}
+{% block title %}Upload result · Sands-sorter{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Upload result</h1>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Upload result</h1>
+  </div>
+</div>
 
-<section class="bg-white rounded-lg shadow p-6 max-w-xl">
+<div class="max-w-xl">
   {% if duplicate %}
-    <p class="text-amber-700 mb-2">Duplicate — already filed.</p>
+    <div class="alert-warning mb-4">Duplicate — already filed.</div>
   {% else %}
-    <p class="text-green-700 mb-2">Filed successfully.</p>
+    <div class="alert-success mb-4">Filed successfully.</div>
   {% endif %}
-  <dl class="text-sm grid grid-cols-[8rem_1fr] gap-y-1">
-    <dt class="text-slate-500">Filename</dt><dd>{{ doc.original_filename }}</dd>
-    <dt class="text-slate-500">Drive path</dt><dd>{{ doc.drive_path or '—' }}</dd>
-    <dt class="text-slate-500">SHA-256</dt><dd class="font-mono text-xs">{{ doc.sha256 }}</dd>
-  </dl>
-  {% if link %}
-    <p class="mt-4">
-      <a href="{{ link }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener">
-        Open in Google Drive
-      </a>
-    </p>
-  {% endif %}
-  <p class="mt-6">
-    <a href="/upload" class="text-blue-600 hover:underline">Upload another</a>
-    · <a href="/" class="text-blue-600 hover:underline">Dashboard</a>
-  </p>
-</section>
+
+  <div class="card-padded">
+    <dl class="kv">
+      <dt>Filename</dt><dd>{{ doc.original_filename }}</dd>
+      <dt>Drive path</dt><dd>{{ doc.drive_path or '—' }}</dd>
+      <dt>SHA-256</dt><dd class="font-mono text-xs break-all">{{ doc.sha256 }}</dd>
+    </dl>
+    {% if link %}
+      <div class="mt-4">
+        <a href="{{ link }}" class="link-action" target="_blank" rel="noopener">Open in Google Drive →</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="mt-6 flex gap-2">
+    <a href="/upload" class="btn btn-primary">Upload another</a>
+    <a href="/" class="btn btn-secondary">Dashboard</a>
+  </div>
+</div>
 {% endblock %}

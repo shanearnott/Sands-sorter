@@ -1,133 +1,129 @@
 {% extends "base.html" %}
 {% block title %}Import #{{ job.id }} · Sands-sorter{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-2xl font-semibold">
-    Import #{{ job.id }}
-    {% if job.dry_run %}
-      <span class="ml-2 text-xs uppercase tracking-wide text-amber-700 border border-amber-300 rounded px-1.5 align-middle">preview</span>
-    {% endif %}
-  </h1>
-  <a href="/import" class="text-sm text-blue-600 hover:underline">&larr; All jobs</a>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      Import #{{ job.id }}
+      {% if job.dry_run %}
+        <span class="badge badge-warning ml-2 align-middle">preview</span>
+      {% endif %}
+    </h1>
+  </div>
+  <a href="/import" class="link-action">← All jobs</a>
 </div>
 
 {% if job.dry_run %}
-  <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 mb-4 text-sm text-amber-900">
+  <div class="alert-warning mb-6">
     <strong>Preview mode.</strong> Auto-filing is disabled — every classified
     item lands in the awaiting queue below so you can review the proposed Drive
     path. Approving an item still performs the real upload.
   </div>
 {% endif %}
 
-<section class="bg-white rounded-lg shadow p-6 mb-6">
-  <dl class="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
-    <dt class="text-slate-500">Source</dt><dd>{{ job.source_kind.value }} : {{ job.source_ref }}</dd>
-    <dt class="text-slate-500">Status</dt><dd>{{ job.status.value }}</dd>
-    <dt class="text-slate-500">Started</dt><dd>{{ (job.started_at or job.created_at).strftime('%Y-%m-%d %H:%M') }}</dd>
-    {% if job.finished_at %}
-      <dt class="text-slate-500">Finished</dt><dd>{{ job.finished_at.strftime('%Y-%m-%d %H:%M') }}</dd>
-    {% endif %}
-    <dt class="text-slate-500">Counts</dt><dd>
-      total {{ job.total_count }} ·
-      <span class="text-green-700">copied {{ job.copied_count }}</span> ·
-      <span class="text-amber-700">awaiting {{ job.awaiting_count }}</span> ·
-      <span class="text-slate-500">skipped {{ job.skipped_count }}</span> ·
-      <span class="text-red-700">errors {{ job.error_count }}</span>
-    </dd>
-  </dl>
+<section class="card mb-6">
+  <div class="card-body">
+    <dl class="kv">
+      <dt>Source</dt><dd>{{ job.source_kind.value }} : {{ job.source_ref }}</dd>
+      <dt>Status</dt><dd><span class="badge badge-info">{{ job.status.value }}</span></dd>
+      <dt>Started</dt><dd>{{ (job.started_at or job.created_at).strftime('%Y-%m-%d %H:%M') }}</dd>
+      {% if job.finished_at %}
+        <dt>Finished</dt><dd>{{ job.finished_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+      {% endif %}
+      <dt>Counts</dt><dd>
+        total {{ job.total_count }} ·
+        <span class="text-emerald-700">copied {{ job.copied_count }}</span> ·
+        <span class="text-amber-700">awaiting {{ job.awaiting_count }}</span> ·
+        <span class="text-slate-500">skipped {{ job.skipped_count }}</span> ·
+        <span class="text-rose-700">errors {{ job.error_count }}</span>
+      </dd>
+    </dl>
 
-  {% if has_pending %}
-    <form method="post" action="/import/{{ job.id }}/process" class="mt-4 flex items-end gap-3">
-      <label>
-        <span class="block text-sm text-slate-600">Batch size</span>
-        <input name="batch_size" type="number" value="20" min="1" max="200" class="w-24 border rounded px-2 py-1">
-      </label>
-      <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">
-        Process next batch
-      </button>
-      <span class="text-sm text-slate-500">Will OCR + classify a batch of pending items.</span>
-    </form>
-  {% else %}
-    <p class="mt-4 text-sm text-slate-500">No pending items.</p>
-  {% endif %}
+    {% if has_pending %}
+      <form method="post" action="/import/{{ job.id }}/process" class="mt-5 flex items-end gap-3">
+        <div class="field">
+          <label class="label">Batch size</label>
+          <input name="batch_size" type="number" value="20" min="1" max="200" class="w-24">
+        </div>
+        <button class="btn btn-primary" type="submit">Process next batch</button>
+        <span class="text-sm text-slate-500 mb-2">OCR + classify a batch of pending items.</span>
+      </form>
+    {% else %}
+      <p class="mt-5 text-sm text-slate-500">No pending items.</p>
+    {% endif %}
+  </div>
 </section>
 
-<section class="bg-white rounded-lg shadow p-6">
-  <h2 class="font-semibold mb-3">Awaiting your decision ({{ awaiting | length }})</h2>
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Awaiting your decision <span class="text-slate-400 font-normal">({{ awaiting | length }})</span></h2>
+  </div>
   {% if awaiting %}
-    <ul class="divide-y">
-      {% for item in awaiting %}
-        <li class="py-4">
-          <div class="flex items-center justify-between text-sm">
-            <div class="font-mono text-slate-600 truncate max-w-xl">{{ item.source_path }}</div>
-            <div class="text-slate-500">conf {{ '%.2f' % (item.confidence or 0) }}</div>
+    {% for item in awaiting %}
+      <div class="card-section p-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="font-mono text-slate-600 truncate max-w-xl text-sm">{{ item.source_path }}</div>
+          <span class="badge badge-warning">conf {{ '%.2f' % (item.confidence or 0) }}</span>
+        </div>
+        {% if item.counterparty or item.extracted_amount_cents %}
+          <div class="text-sm text-slate-600 mt-2">
+            {% if item.counterparty %}<span class="font-medium">{{ item.counterparty }}</span>{% endif %}
+            {% if item.extracted_amount_cents %}
+              <span class="ml-2">{{ item.extracted_currency or '' }}
+                {{ '%.2f' % (item.extracted_amount_cents / 100) }}
+              </span>
+            {% endif %}
+            {% if item.extracted_doc_date %}
+              <span class="ml-2 text-slate-500">{{ item.extracted_doc_date.isoformat() }}</span>
+            {% endif %}
           </div>
-          {% if item.counterparty or item.extracted_amount_cents %}
-            <div class="text-sm text-slate-600 mt-1">
-              {% if item.counterparty %}<span class="font-medium">{{ item.counterparty }}</span>{% endif %}
-              {% if item.extracted_amount_cents %}
-                <span class="ml-2">{{ item.extracted_currency or '' }}
-                  {{ '%.2f' % (item.extracted_amount_cents / 100) }}
-                </span>
-              {% endif %}
-              {% if item.extracted_doc_date %}
-                <span class="ml-2 text-slate-500">{{ item.extracted_doc_date.isoformat() }}</span>
-              {% endif %}
-            </div>
-          {% endif %}
-          {% if item.llm_reasoning %}
-            <div class="text-xs italic text-slate-500 mt-1">{{ item.llm_reasoning }}</div>
-          {% endif %}
+        {% endif %}
+        {% if item.llm_reasoning %}
+          <div class="text-xs italic text-slate-500 mt-1">{{ item.llm_reasoning }}</div>
+        {% endif %}
 
-          <form method="post" action="/import/{{ job.id }}/items/{{ item.id }}/decide"
-                class="mt-3 grid grid-cols-[1fr_1fr_8rem_1fr_auto] gap-2 items-end">
-            <label>
-              <span class="block text-xs text-slate-500">Scope</span>
-              <select name="scope_id" required class="w-full border rounded px-2 py-1 text-sm">
-                {% for s in scopes %}
-                  <option value="{{ s.id }}"
-                    {% if item.proposed_scope_id == s.id %}selected{% endif %}>
-                    {{ s.kind.value }}: {{ s.name }}
-                  </option>
-                {% endfor %}
-              </select>
-            </label>
-            <label>
-              <span class="block text-xs text-slate-500">Category</span>
-              <select name="category_id" required class="w-full border rounded px-2 py-1 text-sm">
-                {% for c in categories %}
-                  <option value="{{ c.id }}"
-                    {% if item.proposed_category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <label>
-              <span class="block text-xs text-slate-500">Direction</span>
-              <select name="direction" class="w-full border rounded px-2 py-1 text-sm">
-                {% for d in directions %}
-                  <option value="{{ d.value }}"
-                    {% if item.proposed_direction == d %}selected{% endif %}>{{ d.value }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <label>
-              <span class="block text-xs text-slate-500">Save as rule (substring)</span>
-              <input name="rule_pattern" value="{{ item.counterparty or '' }}"
-                class="w-full border rounded px-2 py-1 text-sm">
-            </label>
-            <label class="flex items-center gap-1 text-xs text-slate-600 mb-1">
-              <input type="checkbox" name="save_as_rule" value="true" checked>
-              save
-            </label>
-            <button class="col-start-5 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">
-              File
-            </button>
-          </form>
-        </li>
-      {% endfor %}
-    </ul>
+        <form method="post" action="/import/{{ job.id }}/items/{{ item.id }}/decide"
+              class="mt-4 grid grid-cols-[1fr_1fr_8rem_1fr_auto_auto] gap-3 items-end">
+          <div class="field">
+            <label class="label">Scope</label>
+            <select name="scope_id" required>
+              {% for s in scopes %}
+                <option value="{{ s.id }}" {% if item.proposed_scope_id == s.id %}selected{% endif %}>
+                  {{ s.kind.value }}: {{ s.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Category</label>
+            <select name="category_id" required>
+              {% for c in categories %}
+                <option value="{{ c.id }}" {% if item.proposed_category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Direction</label>
+            <select name="direction">
+              {% for d in directions %}
+                <option value="{{ d.value }}" {% if item.proposed_direction == d %}selected{% endif %}>{{ d.value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Save as rule</label>
+            <input name="rule_pattern" value="{{ item.counterparty or '' }}">
+          </div>
+          <label class="flex items-center gap-1.5 text-xs text-slate-600 mb-2 whitespace-nowrap">
+            <input type="checkbox" name="save_as_rule" value="true" checked class="bare">
+            save
+          </label>
+          <button class="btn btn-primary btn-sm" type="submit">File</button>
+        </form>
+      </div>
+    {% endfor %}
   {% else %}
-    <p class="text-slate-500">Nothing awaiting. Run another batch above.</p>
+    <div class="empty-state">Nothing awaiting. Run another batch above.</div>
   {% endif %}
 </section>
 {% endblock %}

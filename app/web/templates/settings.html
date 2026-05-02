@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Settings · Sands-sorter{% endblock %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Settings</h1>
+      <p class="page-subtitle">
+        Runtime configuration. Values saved here are stored in the database and
+        overlay anything from <code>.env</code>.
+      </p>
+    </div>
+  </div>
+
+  {% if local_mode %}
+    <div class="alert-warning mb-6">
+      <strong>Local mode is active.</strong> Add a Google OAuth client ID + secret
+      below and save to enable Google sign-in, Gmail polling, and Drive uploads.
+    </div>
+  {% else %}
+    <div class="alert-success mb-6">
+      <strong>Google integration enabled.</strong> Sign-in is required and Gmail/Drive features are available.
+    </div>
+  {% endif %}
+
+  {% if saved %}
+    <div class="alert-success mb-6">Saved.</div>
+  {% endif %}
+
+  <form method="post" action="/settings" class="space-y-6">
+    {% for group_title, rows in groups %}
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">{{ group_title }}</h2>
+        </div>
+        <div class="card-body space-y-5">
+          {% for row in rows %}
+            <div class="field">
+              <label for="{{ row.key }}" class="label-lg">{{ row.label }}</label>
+              <input
+                type="{% if row.is_secret %}password{% else %}text{% endif %}"
+                id="{{ row.key }}"
+                name="{{ row.key }}"
+                value="{{ row.value }}"
+                {% if row.from_env %}placeholder="(using .env value: {% if row.is_secret %}••••••••{% else %}{{ row.env_value }}{% endif %})"{% endif %}
+                class="input-mono"
+                autocomplete="off"
+              >
+              {% if row.hint %}
+                <p class="hint">{{ row.hint }}</p>
+              {% endif %}
+              {% if row.from_env %}
+                <p class="hint text-slate-400">Currently inheriting from <code>.env</code>.</p>
+              {% elif row.value %}
+                <p class="hint text-slate-400">Saved in database.</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <a href="/" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

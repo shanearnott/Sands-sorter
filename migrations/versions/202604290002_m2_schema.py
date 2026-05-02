@@ -19,8 +19,9 @@ depends_on = None
 def upgrade() -> None:
     bind = op.get_bind()
 
-    scope_country = sa.Enum("AU", "US", name="scope_country")
-    direction = sa.Enum("expense", "income", name="direction")
+    from sqlalchemy.dialects.postgresql import ENUM as PgEnum
+    scope_country = PgEnum("AU", "US", name="scope_country", create_type=False)
+    direction = PgEnum("expense", "income", name="direction", create_type=False)
     scope_country.create(bind, checkfirst=True)
     direction.create(bind, checkfirst=True)
 

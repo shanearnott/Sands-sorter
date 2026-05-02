@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
 revision = "202604290003"
 down_revision = "202604290002"
@@ -17,15 +18,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    job_status = sa.Enum(
+    job_status = PgEnum(
         "pending", "running", "paused", "done", "cancelled", "error",
-        name="import_job_status",
+        name="import_job_status", create_type=False,
     )
-    item_status = sa.Enum(
+    item_status = PgEnum(
         "pending", "awaiting", "copied", "skipped", "error",
-        name="import_item_status",
+        name="import_item_status", create_type=False,
     )
-    source_kind = sa.Enum("drive", "local", name="import_source_kind")
+    source_kind = PgEnum("drive", "local", name="import_source_kind", create_type=False)
 
     bind = op.get_bind()
     for enum in (job_status, item_status, source_kind):
@@ -73,13 +74,13 @@ def upgrade() -> None:
         sa.Column("proposed_scope_name", sa.String(120)),
         sa.Column(
             "proposed_scope_kind",
-            sa.Enum("property", "car", "life", name="scope_kind", create_type=False),
+            PgEnum("property", "car", "life", name="scope_kind", create_type=False),
         ),
         sa.Column("proposed_category_id", sa.Integer, sa.ForeignKey("categories.id")),
         sa.Column("proposed_category_name", sa.String(120)),
         sa.Column(
             "proposed_direction",
-            sa.Enum("expense", "income", name="direction", create_type=False),
+            PgEnum("expense", "income", name="direction", create_type=False),
         ),
         sa.Column("proposed_fy", sa.Integer),
         sa.Column("proposed_drive_path", sa.String(1000)),

@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import current_user, optional_user
-from app.config import get_settings
+from app.config import get_settings, is_local_mode
 from app.db import get_db
 from app.drive.credentials import load_drive_credentials
 from app.drive.paths import build_path
@@ -41,6 +41,7 @@ def _ctx(request: Request, **extra) -> dict:
         "request": request,
         "user_email": optional_user(request),
         "settings": get_settings(),
+        "local_mode": is_local_mode(),
         **extra,
     }
 

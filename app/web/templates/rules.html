@@ -1,79 +1,105 @@
 {% extends "base.html" %}
 {% block title %}Rules · Sands-sorter{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-2xl font-semibold">Rules</h1>
-  <a href="/rules/test" class="text-sm text-blue-600 hover:underline">Test against sample text &rarr;</a>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Rules</h1>
+    <p class="page-subtitle">
+      Rules are tried in priority order (lower number wins). The first match
+      sets scope, category, and (optionally) direction.
+    </p>
+  </div>
+  <a href="/rules/test" class="link-action">Test against sample text →</a>
 </div>
 
-<section class="bg-white rounded-lg shadow p-6 mb-6">
-  <p class="text-sm text-slate-600 mb-4">
-    Rules are tried in priority order (lower number wins). The first match
-    sets scope, category, and (optionally) direction.
-  </p>
-  <form method="post" action="/rules" class="grid grid-cols-[8rem_1fr_1fr_1fr_6rem_5rem_5rem_auto] gap-2 items-end">
-    <label><span class="block text-xs text-slate-500">Match</span>
-      <select name="match_type" class="w-full border rounded px-2 py-1 text-sm">
-        {% for m in match_types %}<option value="{{ m.value }}">{{ m.value }}</option>{% endfor %}
-      </select>
-    </label>
-    <label><span class="block text-xs text-slate-500">Pattern</span>
-      <input name="pattern" required class="w-full border rounded px-2 py-1 text-sm"></label>
-    <label><span class="block text-xs text-slate-500">Scope</span>
-      <select name="scope_id" required class="w-full border rounded px-2 py-1 text-sm">
-        {% for s in scopes %}
-          <option value="{{ s.id }}">{{ s.kind.value }}: {{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label><span class="block text-xs text-slate-500">Category</span>
-      <select name="category_id" required class="w-full border rounded px-2 py-1 text-sm">
-        {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
-      </select>
-    </label>
-    <label><span class="block text-xs text-slate-500">Direction</span>
-      <select name="direction" class="w-full border rounded px-2 py-1 text-sm">
-        <option value="">—</option>
-        {% for d in directions %}<option value="{{ d.value }}">{{ d.value }}</option>{% endfor %}
-      </select>
-    </label>
-    <label><span class="block text-xs text-slate-500">Priority</span>
-      <input name="priority" type="number" value="100" class="w-full border rounded px-2 py-1 text-sm"></label>
-    <label><span class="block text-xs text-slate-500">Conf.</span>
-      <input name="confidence" type="number" step="0.05" min="0" max="1" value="0.95"
-             class="w-full border rounded px-2 py-1 text-sm"></label>
-    <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 text-sm">Add</button>
-  </form>
+<section class="card mb-6">
+  <div class="card-header">
+    <h2 class="card-title">Add rule</h2>
+  </div>
+  <div class="card-body">
+    <form method="post" action="/rules" class="grid grid-cols-[8rem_1fr_1fr_1fr_6rem_5rem_5rem_auto] gap-3 items-end">
+      <div class="field">
+        <label class="label">Match</label>
+        <select name="match_type">
+          {% for m in match_types %}<option value="{{ m.value }}">{{ m.value }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">Pattern</label>
+        <input name="pattern" required class="input-mono">
+      </div>
+      <div class="field">
+        <label class="label">Scope</label>
+        <select name="scope_id" required>
+          {% for s in scopes %}
+            <option value="{{ s.id }}">{{ s.kind.value }}: {{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">Category</label>
+        <select name="category_id" required>
+          {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">Direction</label>
+        <select name="direction">
+          <option value="">—</option>
+          {% for d in directions %}<option value="{{ d.value }}">{{ d.value }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">Priority</label>
+        <input name="priority" type="number" value="100">
+      </div>
+      <div class="field">
+        <label class="label">Conf.</label>
+        <input name="confidence" type="number" step="0.05" min="0" max="1" value="0.95">
+      </div>
+      <button class="btn btn-primary" type="submit">Add</button>
+    </form>
+  </div>
 </section>
 
-<section class="bg-white rounded-lg shadow p-6">
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">All rules</h2>
+  </div>
   {% if rules %}
-    <table class="w-full text-sm">
-      <thead class="text-slate-500 text-left">
+    <table class="table">
+      <thead>
         <tr>
-          <th class="py-2">Pri</th><th>Match</th><th>Pattern</th><th>Scope</th>
-          <th>Category</th><th>Direction</th><th>Conf</th><th>Source</th><th></th>
+          <th class="num w-12">Pri</th>
+          <th>Match</th>
+          <th>Pattern</th>
+          <th>Scope</th>
+          <th>Category</th>
+          <th>Direction</th>
+          <th class="num">Conf</th>
+          <th>Source</th>
+          <th class="w-32"></th>
         </tr>
       </thead>
       <tbody>
         {% for r in rules %}
-          <tr class="border-t {% if not r.enabled %}opacity-50{% endif %}">
-            <td class="py-2">{{ r.priority }}</td>
-            <td>{{ r.match_type.value }}</td>
+          <tr class="{% if not r.enabled %}opacity-50{% endif %}">
+            <td class="num text-slate-500">{{ r.priority }}</td>
+            <td><span class="badge badge-neutral">{{ r.match_type.value }}</span></td>
             <td class="font-mono text-xs max-w-xs truncate">{{ r.pattern }}</td>
             <td>{{ r.scope.kind.value }}: {{ r.scope.name }}</td>
             <td>{{ r.category.name }}</td>
             <td>{{ r.direction.value if r.direction else '—' }}</td>
-            <td>{{ '%.2f' % r.confidence }}</td>
+            <td class="num">{{ '%.2f' % r.confidence }}</td>
             <td class="text-xs text-slate-500">{{ r.source.value }}</td>
-            <td class="space-x-2">
+            <td class="text-right space-x-3">
               <form method="post" action="/rules/{{ r.id }}/toggle" class="inline">
-                <button class="text-xs text-slate-600 hover:underline">
+                <button class="link-action-muted" type="submit">
                   {{ 'disable' if r.enabled else 'enable' }}
                 </button>
               </form>
               <form method="post" action="/rules/{{ r.id }}/delete" class="inline">
-                <button class="text-xs text-red-600 hover:underline">delete</button>
+                <button class="link-action-danger" type="submit">delete</button>
               </form>
             </td>
           </tr>
@@ -81,7 +107,10 @@
       </tbody>
     </table>
   {% else %}
-    <p class="text-slate-500">No rules yet. The wizard will add learned rules whenever you tick "save" while filing an awaiting item.</p>
+    <div class="empty-state">
+      No rules yet. The wizard will add learned rules whenever you tick "save"
+      while filing an awaiting item.
+    </div>
   {% endif %}
 </section>
 {% endblock %}

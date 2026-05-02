@@ -7,6 +7,20 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# Keys whose values can be overlaid by the runtime `app_config` table from the
+# /settings page. Anything not in this set stays env-only.
+RUNTIME_OVERLAY_KEYS: frozenset[str] = frozenset({
+    "google_oauth_client_id",
+    "google_oauth_client_secret",
+    "google_oauth_redirect_url",
+    "allowed_emails",
+    "drive_root_folder_id",
+    "anthropic_api_key",
+    "dropbox_app_key",
+    "dropbox_app_secret",
+})
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -73,3 +87,32 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+# --- Runtime overlay -------------------------------------------------------
+# The /settings page can write Google OAuth + integration creds into the
+# `app_config` table; those overlay the env-loaded Settings at request time.
+# Loaded once at startup and refreshed whenever /settings saves.
+
+_runtime_overrides: dict[str, str] = {}
+
+
+def set_runtime_overrides(values: dict[str, str]) -> None:
+    """Replace the in-memory overlay (called from startup + /settings POST)."""
+    global _runtime_overrides
+    _runtime_overrides = {k: v for k, v in values.items() if k in RUNTIME_OVERLAY_KEYS}
+
+
+def runtime_value(key: str) -> str:
+    """Effective value for an overlay-eligible key: DB override wins, then env."""
+    if key not in RUNTIME_OVERLAY_KEYS:
+        raise KeyError(f"{key} is not a runtime-overlay key")
+    override = _runtime_overrides.get(key)
+    if override:
+        return override
+    return getattr(get_settings(), key, "") or ""
+
+
+def is_local_mode() -> bool:
+    """No Google OAuth client_id configured (env or runtime) → local mode."""
+    return not runtime_value("google_oauth_client_id")

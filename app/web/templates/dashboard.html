@@ -1,14 +1,31 @@
 {% extends "base.html" %}
+{% block title %}Dashboard · Sands-sorter{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Dashboard</h1>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Latest filing activity.</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="/upload" class="btn btn-primary">Upload</a>
+    {% if not local_mode %}
+      <a href="/import" class="btn btn-secondary">Import from Drive</a>
+    {% endif %}
+  </div>
+</div>
 
-<section class="bg-white rounded-lg shadow p-6 mb-6">
-  <h2 class="font-semibold mb-3">Recent documents</h2>
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Recent documents</h2>
+    {% if recent %}
+      <a href="/moves" class="link-action">View all</a>
+    {% endif %}
+  </div>
   {% if recent %}
-    <table class="w-full text-sm">
-      <thead class="text-slate-500 text-left">
+    <table class="table">
+      <thead>
         <tr>
-          <th class="py-2">When</th>
+          <th>When</th>
           <th>File</th>
           <th>Path</th>
           <th>Source</th>
@@ -17,18 +34,18 @@
       </thead>
       <tbody>
         {% for d in recent %}
-          <tr class="border-t">
-            <td class="py-2 text-slate-500">{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td>{{ d.original_filename }}</td>
+          <tr>
+            <td class="text-slate-500 whitespace-nowrap">{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="font-medium text-slate-900">{{ d.original_filename }}</td>
             <td class="text-slate-600">{{ d.drive_path or '—' }}</td>
-            <td>{{ d.classifier.value }}</td>
+            <td><span class="badge badge-neutral">{{ d.classifier.value }}</span></td>
             <td>
               {% if d.status.value == 'filed' %}
-                <span class="text-green-700">filed</span>
+                <span class="badge badge-success">filed</span>
               {% elif d.status.value == 'unsorted' %}
-                <span class="text-amber-700">unsorted</span>
+                <span class="badge badge-warning">unsorted</span>
               {% else %}
-                <span class="text-red-700">{{ d.status.value }}</span>
+                <span class="badge badge-danger">{{ d.status.value }}</span>
               {% endif %}
             </td>
           </tr>
@@ -36,9 +53,10 @@
       </tbody>
     </table>
   {% else %}
-    <p class="text-slate-500">No documents filed yet. Try the
-      <a class="text-blue-600 hover:underline" href="/upload">manual upload</a>.
-    </p>
+    <div class="empty-state">
+      No documents filed yet. Try the
+      <a class="link-action" href="/upload">manual upload</a>.
+    </div>
   {% endif %}
 </section>
 {% endblock %}

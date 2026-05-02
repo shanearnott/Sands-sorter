@@ -4,39 +4,281 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Sands-sorter{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50:  '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            },
+          },
+          boxShadow: {
+            card: '0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)',
+            'card-hover': '0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06)',
+          },
+        },
+      },
+    };
+  </script>
+  <style type="text/tailwindcss">
+    @layer base {
+      html { font-family: 'Inter', system-ui, sans-serif; }
+      body { @apply bg-slate-50 text-slate-900 antialiased; }
+      h1, h2, h3, h4 { @apply tracking-tight; }
+      code { @apply font-mono text-[0.85em] bg-slate-100 px-1 py-0.5 rounded text-slate-700; }
+    }
+    @layer components {
+      /* ---- Layout ---- */
+      .page-title { @apply text-2xl font-semibold tracking-tight text-slate-900; }
+      .page-subtitle { @apply mt-1 text-sm text-slate-500; }
+      .page-header { @apply flex flex-wrap items-end justify-between gap-4 mb-6 pb-4 border-b border-slate-200; }
+
+      /* ---- Cards ---- */
+      .card { @apply bg-white rounded-xl shadow-card border border-slate-200/60; }
+      .card-padded { @apply card p-6; }
+      .card-section + .card-section { @apply border-t border-slate-200; }
+      .card-header { @apply px-6 py-4 border-b border-slate-200 flex items-center justify-between; }
+      .card-body { @apply p-6; }
+      .card-title { @apply text-base font-semibold text-slate-900; }
+      .card-subtitle { @apply text-sm text-slate-500 mt-1; }
+
+      /* ---- Buttons ---- */
+      .btn {
+        @apply inline-flex items-center justify-center gap-1.5
+               px-3.5 py-2 text-sm font-medium rounded-lg
+               border border-transparent
+               transition-all duration-150
+               focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-500
+               disabled:opacity-50 disabled:cursor-not-allowed;
+      }
+      .btn-sm { @apply px-2.5 py-1 text-xs gap-1; }
+      .btn-primary  { @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700; }
+      .btn-secondary{ @apply bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-sm; }
+      .btn-ghost    { @apply bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900; }
+      .btn-danger   { @apply bg-rose-600 text-white shadow-sm hover:bg-rose-700; }
+
+      .link-action       { @apply text-sm text-brand-600 hover:text-brand-700 hover:underline font-medium; }
+      .link-action-danger{ @apply text-xs text-rose-600 hover:text-rose-700 hover:underline; }
+      .link-action-muted { @apply text-xs text-slate-500 hover:text-slate-700 hover:underline; }
+
+      /* ---- Forms ---- */
+      .field { @apply block; }
+      .label { @apply block text-xs font-medium text-slate-600 uppercase tracking-wide mb-1; }
+      .label-lg { @apply block text-sm font-medium text-slate-700 mb-1.5; }
+      .hint  { @apply mt-1 text-xs text-slate-500; }
+      .input,
+      input[type="text"]:not(.bare),
+      input[type="password"]:not(.bare),
+      input[type="email"]:not(.bare),
+      input[type="number"]:not(.bare),
+      input[type="date"]:not(.bare),
+      select:not(.bare),
+      textarea:not(.bare) {
+        @apply block w-full rounded-lg border-slate-300 bg-white shadow-sm
+               text-sm text-slate-900 placeholder-slate-400
+               focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30
+               transition-shadow;
+      }
+      input[type="file"] {
+        @apply block w-full text-sm text-slate-700
+               file:mr-3 file:py-1.5 file:px-3 file:rounded-md
+               file:border-0 file:bg-brand-50 file:text-brand-700
+               file:text-xs file:font-medium hover:file:bg-brand-100;
+      }
+      .input-mono { @apply font-mono; }
+
+      /* ---- Tables ---- */
+      .table { @apply w-full text-sm border-collapse; }
+      .table thead th {
+        @apply text-left text-[11px] font-semibold uppercase tracking-wider
+               text-slate-500 px-3 py-2.5 bg-slate-50 border-b border-slate-200;
+      }
+      .table tbody td { @apply px-3 py-2.5 border-b border-slate-100 align-middle; }
+      .table tbody tr:hover { @apply bg-slate-50/50; }
+      .table tbody tr:last-child td { @apply border-b-0; }
+      .table .num { @apply text-right tabular-nums; }
+      .table-clean thead th { @apply bg-transparent border-b border-slate-200; }
+
+      /* ---- Badges & status ---- */
+      .badge { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium; }
+      .badge-success { @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+      .badge-warning { @apply bg-amber-50 text-amber-700 ring-1 ring-amber-200; }
+      .badge-danger  { @apply bg-rose-50 text-rose-700 ring-1 ring-rose-200; }
+      .badge-info    { @apply bg-brand-50 text-brand-700 ring-1 ring-brand-200; }
+      .badge-neutral { @apply bg-slate-100 text-slate-700 ring-1 ring-slate-200; }
+
+      .dot { @apply inline-block w-1.5 h-1.5 rounded-full; }
+
+      /* ---- Alerts ---- */
+      .alert { @apply rounded-lg border p-4 text-sm; }
+      .alert-info    { @apply alert bg-brand-50/60 border-brand-200 text-brand-900; }
+      .alert-success { @apply alert bg-emerald-50/60 border-emerald-200 text-emerald-900; }
+      .alert-warning { @apply alert bg-amber-50/60 border-amber-200 text-amber-900; }
+      .alert-danger  { @apply alert bg-rose-50/60 border-rose-200 text-rose-900; }
+
+      /* ---- Sidebar ---- */
+      .sidebar {
+        @apply w-64 shrink-0 bg-white border-r border-slate-200
+               flex flex-col h-screen sticky top-0;
+      }
+      .sidebar-brand {
+        @apply flex items-center gap-3 px-5 py-5 border-b border-slate-200;
+      }
+      .brand-mark {
+        @apply w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700
+               flex items-center justify-center text-white font-bold text-sm shadow-sm;
+      }
+      .nav-list { @apply flex-1 overflow-y-auto py-4 px-3 space-y-6; }
+      .nav-group-title {
+        @apply px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400;
+      }
+      .nav-item {
+        @apply flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm
+               text-slate-600 hover:bg-slate-100 hover:text-slate-900
+               transition-colors;
+      }
+      .nav-item.active {
+        @apply bg-brand-50 text-brand-700 font-medium;
+      }
+      .nav-item.active svg { @apply text-brand-600; }
+      .nav-item svg { @apply w-4 h-4 text-slate-400 shrink-0; }
+      .sidebar-footer { @apply border-t border-slate-200 px-4 py-3; }
+
+      /* ---- Misc utilities ---- */
+      .kv { @apply grid gap-y-1.5 text-sm; grid-template-columns: 9rem 1fr; }
+      .kv dt { @apply text-slate-500; }
+      .kv dd { @apply text-slate-900; }
+
+      .empty-state { @apply text-center py-10 text-slate-500 text-sm; }
+      .divider { @apply border-t border-slate-200 my-6; }
+    }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
-  <header class="bg-white border-b">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="font-semibold">Sands-sorter</a>
-      <nav class="flex gap-4 text-sm">
-        {% if user_email %}
-          <a href="/" class="hover:underline">Dashboard</a>
-          <a href="/overview" class="hover:underline">Overview</a>
-          <a href="/import" class="hover:underline">Import</a>
-          <a href="/moves" class="hover:underline">Moves</a>
-          <a href="/unsorted" class="hover:underline">Unsorted</a>
-          <a href="/rules" class="hover:underline">Rules</a>
-          <a href="/sources" class="hover:underline">Sources</a>
-          <a href="/vendors" class="hover:underline">Vendors</a>
-          <a href="/properties" class="hover:underline">Properties</a>
-          <a href="/entities" class="hover:underline">Entities</a>
-          <a href="/personal" class="hover:underline">Personal</a>
-          <a href="/categories" class="hover:underline">Categories</a>
-          <a href="/passwords" class="hover:underline">Passwords</a>
-          <a href="/upload" class="hover:underline">Upload</a>
-          <span class="text-slate-500">{{ user_email }}</span>
-          <a href="/auth/logout" class="text-slate-500 hover:underline">Sign out</a>
-        {% else %}
-          <a href="/auth/login" class="text-blue-600 hover:underline">Sign in</a>
-        {% endif %}
+<body>
+  {% set path = request.url.path %}
+  {% macro nav_link(href, label, icon=None) %}
+    <a href="{{ href }}"
+       class="nav-item {% if (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %}active{% endif %}">
+      {% if icon %}{{ icon|safe }}{% endif %}
+      <span>{{ label }}</span>
+    </a>
+  {% endmacro %}
+
+  {# Heroicons (outline, 20x20) — inline so no extra HTTP requests #}
+  {% set ic_home %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>{% endset %}
+  {% set ic_chart %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>{% endset %}
+  {% set ic_upload %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>{% endset %}
+  {% set ic_download %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>{% endset %}
+  {% set ic_inbox %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>{% endset %}
+  {% set ic_archive %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>{% endset %}
+  {% set ic_house %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 12 3l9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg>{% endset %}
+  {% set ic_office %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14"/><path d="M3 21h18"/><path d="M7 9h2M7 13h2M7 17h2M13 9h2M13 13h2M13 17h2"/></svg>{% endset %}
+  {% set ic_user %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>{% endset %}
+  {% set ic_grid %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>{% endset %}
+  {% set ic_store %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l1.5-3h17L22 7"/><path d="M2 7v13a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V7"/><path d="M2 7c0 2 2 3 4 3s4-1 4-3c0 2 2 3 4 3s4-1 4-3c0 2 2 3 4 3"/></svg>{% endset %}
+  {% set ic_bolt %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>{% endset %}
+  {% set ic_key %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 8.5-8.5L21 5l-1.5 1.5L21 8l-2 2-1.5-1.5"/></svg>{% endset %}
+  {% set ic_link %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>{% endset %}
+  {% set ic_settings %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.39.16.7.5 1 1h.09a2 2 0 0 1 0 4H21a1.65 1.65 0 0 0-1.6 1z"/></svg>{% endset %}
+  {% set ic_logout %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>{% endset %}
+
+  <div class="min-h-screen flex">
+    <aside class="sidebar">
+      <a href="/" class="sidebar-brand">
+        <div class="brand-mark">SS</div>
+        <div class="leading-tight">
+          <div class="font-semibold text-slate-900">Sands-sorter</div>
+          {% if local_mode %}
+            <div class="text-[11px] text-amber-600 font-medium">local mode</div>
+          {% else %}
+            <div class="text-[11px] text-slate-500">household filing</div>
+          {% endif %}
+        </div>
+      </a>
+
+      <nav class="nav-list">
+        <div>
+          <div class="nav-group-title">Workflow</div>
+          {{ nav_link('/', 'Dashboard', ic_home) }}
+          {{ nav_link('/overview', 'Overview', ic_chart) }}
+          {{ nav_link('/upload', 'Upload', ic_upload) }}
+          {{ nav_link('/import', 'Import', ic_download) }}
+        </div>
+        <div>
+          <div class="nav-group-title">Review</div>
+          {{ nav_link('/unsorted', 'Unsorted', ic_archive) }}
+          {{ nav_link('/moves', 'Recent moves', ic_inbox) }}
+        </div>
+        <div>
+          <div class="nav-group-title">Library</div>
+          {{ nav_link('/properties', 'Properties', ic_house) }}
+          {{ nav_link('/entities', 'Entities', ic_office) }}
+          {{ nav_link('/personal', 'Personal', ic_user) }}
+          {{ nav_link('/categories', 'Categories', ic_grid) }}
+          {{ nav_link('/vendors', 'Vendors', ic_store) }}
+        </div>
+        <div>
+          <div class="nav-group-title">Automation</div>
+          {{ nav_link('/rules', 'Rules', ic_bolt) }}
+          {{ nav_link('/passwords', 'Passwords', ic_key) }}
+          {% if not local_mode %}
+            {{ nav_link('/sources', 'Sources', ic_link) }}
+          {% endif %}
+        </div>
+        <div>
+          <div class="nav-group-title">System</div>
+          {{ nav_link('/settings', 'Settings', ic_settings) }}
+        </div>
       </nav>
+
+      <div class="sidebar-footer">
+        {% if local_mode %}
+          <div class="text-xs text-slate-500">
+            <div class="font-medium text-slate-700 mb-0.5">Local mode</div>
+            <div>No sign-in. Add Google in <a href="/settings" class="text-brand-600 hover:underline">Settings</a> to enable cloud features.</div>
+          </div>
+        {% elif user_email %}
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold">
+              {{ user_email[0]|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-medium text-slate-700 truncate">{{ user_email }}</div>
+              <a href="/auth/logout" class="text-[11px] text-slate-500 hover:text-slate-700 inline-flex items-center gap-1">
+                <span>Sign out</span>
+              </a>
+            </div>
+          </div>
+        {% else %}
+          <a href="/auth/login" class="btn btn-primary btn-sm w-full">Sign in with Google</a>
+        {% endif %}
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <main class="flex-1 px-8 py-8 max-w-6xl w-full mx-auto">
+        {% block content %}{% endblock %}
+      </main>
     </div>
-  </header>
-  <main class="max-w-5xl mx-auto px-4 py-6">
-    {% block content %}{% endblock %}
-  </main>
+  </div>
 </body>
 </html>

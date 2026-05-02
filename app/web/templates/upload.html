@@ -1,19 +1,25 @@
 {% extends "base.html" %}
+{% block title %}Upload · Sands-sorter{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Manual upload</h1>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Manual upload</h1>
+    <p class="page-subtitle">File a single document into Drive directly.</p>
+  </div>
+</div>
 
-<section class="bg-white rounded-lg shadow p-6 max-w-xl">
-  <p class="text-sm text-slate-600 mb-4">
+<div class="max-w-xl">
+  <div class="alert-info mb-6">
     Pick a scope (Property, Personal, or Entity), category, and direction.
     Files land at <code>&lt;Kind&gt;/&lt;Name?&gt;/&lt;Cat&gt;/</code> in Drive.
-    The financial year is recorded as metadata (AU = 1 Jul start; US = calendar)
-    and shown in the per-scope view, where you can also bulk-download a year as
-    a zip.
-  </p>
-  <form method="post" enctype="multipart/form-data" action="/upload" class="grid gap-3">
-    <label>
-      <span class="block text-sm text-slate-600">Scope</span>
-      <select name="scope_id" required class="w-full border rounded px-2 py-1">
+    Financial year is recorded as metadata (AU = 1 Jul start; US = calendar) and
+    shown in the per-scope view, where you can bulk-download a year as a zip.
+  </div>
+
+  <form method="post" enctype="multipart/form-data" action="/upload" class="card-padded space-y-5">
+    <div class="field">
+      <label class="label-lg">Scope</label>
+      <select name="scope_id" required>
         {% set last_kind = namespace(value=None) %}
         {% for s in scopes %}
           {% if s.kind != last_kind.value %}
@@ -25,35 +31,43 @@
         {% endfor %}
         {% if last_kind.value is not none %}</optgroup>{% endif %}
       </select>
-    </label>
-    <label>
-      <span class="block text-sm text-slate-600">Category</span>
-      <select name="category_id" required class="w-full border rounded px-2 py-1">
+    </div>
+
+    <div class="field">
+      <label class="label-lg">Category</label>
+      <select name="category_id" required>
         {% for c in categories %}
           <option value="{{ c.id }}">{{ c.name }}</option>
         {% endfor %}
       </select>
-    </label>
-    <fieldset class="flex gap-4">
-      <legend class="text-sm text-slate-600">Direction</legend>
-      <label class="flex items-center gap-1">
-        <input type="radio" name="direction" value="expense" checked> Expense
-      </label>
-      <label class="flex items-center gap-1">
-        <input type="radio" name="direction" value="income"> Income (rent)
-      </label>
-    </fieldset>
-    <label>
-      <span class="block text-sm text-slate-600">Document date (optional, defaults to today)</span>
-      <input name="doc_date" type="date" class="w-full border rounded px-2 py-1">
-    </label>
-    <label>
-      <span class="block text-sm text-slate-600">File</span>
-      <input name="file" type="file" required class="w-full">
-    </label>
-    <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 w-fit">
-      Upload
-    </button>
+    </div>
+
+    <div class="field">
+      <span class="label-lg">Direction</span>
+      <div class="flex gap-4 mt-1">
+        <label class="flex items-center gap-2 text-sm">
+          <input type="radio" name="direction" value="expense" checked class="bare"> Expense
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="radio" name="direction" value="income" class="bare"> Income (rent)
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label-lg">Document date</label>
+      <input name="doc_date" type="date">
+      <p class="hint">Optional. Defaults to today.</p>
+    </div>
+
+    <div class="field">
+      <label class="label-lg">File</label>
+      <input name="file" type="file" required>
+    </div>
+
+    <div class="pt-2">
+      <button class="btn btn-primary" type="submit">Upload</button>
+    </div>
   </form>
-</section>
+</div>
 {% endblock %}

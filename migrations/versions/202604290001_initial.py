@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
 revision = "202604290001"
 down_revision = None
@@ -17,14 +18,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    scope_kind = sa.Enum("property", "car", "life", name="scope_kind")
-    match_type = sa.Enum(
-        "contains", "regex", "sender_email", "filename", name="match_type"
+    scope_kind = PgEnum("property", "car", "life", name="scope_kind", create_type=False)
+    match_type = PgEnum(
+        "contains", "regex", "sender_email", "filename", name="match_type", create_type=False
     )
-    rule_source = sa.Enum("manual", "learned_from_reassign", name="rule_source")
-    source_kind = sa.Enum("gmail", "dropbox", name="source_kind")
-    classifier = sa.Enum("rule", "llm", "manual", "unsorted", name="classifier")
-    doc_status = sa.Enum("filed", "unsorted", "error", name="doc_status")
+    rule_source = PgEnum("manual", "learned_from_reassign", name="rule_source", create_type=False)
+    source_kind = PgEnum("gmail", "dropbox", name="source_kind", create_type=False)
+    classifier = PgEnum("rule", "llm", "manual", "unsorted", name="classifier", create_type=False)
+    doc_status = PgEnum("filed", "unsorted", "error", name="doc_status", create_type=False)
 
     bind = op.get_bind()
     for enum in (scope_kind, match_type, rule_source, source_kind, classifier, doc_status):

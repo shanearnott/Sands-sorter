@@ -18,7 +18,7 @@ from app.auth import current_user, optional_user
 from app.classifier import rules as rules_engine
 from app.classifier.llm import ClaudeFallback
 from app.classifier.rules import RuleInput
-from app.config import get_settings
+from app.config import get_settings, is_local_mode
 from app.db import get_db
 from app.drive.credentials import load_drive_credentials
 from app.drive.uploader import DriveUploader
@@ -53,6 +53,7 @@ def _ctx(request: Request, **extra) -> dict:
         "request": request,
         "user_email": optional_user(request),
         "settings": get_settings(),
+        "local_mode": is_local_mode(),
         **extra,
     }
 
