@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0)
     ocr_text_retention_days: int = 90
 
+    # Shared secret used by Cloud Scheduler (X-Internal-Key header) to invoke
+    # /internal/poll and /internal/summary.
+    internal_api_key: str = ""
+
     # Demo / no-credentials mode. When set, M3 falls back to local stand-ins.
     demo_drive_root: str = ""           # writes files here instead of Drive
     demo_dropbox_root: str = ""         # poller watches this folder

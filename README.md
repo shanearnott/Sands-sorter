@@ -102,6 +102,69 @@ Visit <http://localhost:8000>. Sign in with a Google account whose email is in
 pytest
 ```
 
+## Deploy to Cloud Run + Cloud SQL
+
+This is the recommended production hosting path — multi-user-accessible at a
+single HTTPS URL, Postgres for shared state, Drive for the actual filed bills,
+secrets in Secret Manager.
+
+### Prerequisites
+- A Google Cloud project (`gcloud auth login` + `gcloud config set project`).
+- A Drive folder you've shared with whoever runs the OAuth flow — note its id.
+- A desktop OAuth client in that project (for Google login + Drive scopes).
+- Optional: a Document AI Invoice Parser processor (otherwise the local
+  `pdfplumber` fallback runs).
+
+### One-shot bootstrap
+
+```bash
+GCP_PROJECT_ID=your-project ./scripts/cloud-run/setup_infra.sh
+```
+
+This is idempotent. It enables APIs, creates a Cloud SQL Postgres instance
+(`sands-sql`, `db-f1-micro` ≈ AUD $10/mo), provisions a runtime service
+account with `cloudsql.client` + `secretmanager.secretAccessor` +
+`documentai.apiUser`, creates Secret Manager entries (most empty, populated
+later), and auto-generates a random `internal-api-key` + `session-secret-key`.
+
+### Populate the secrets
+
+```bash
+gcloud secrets versions add drive-token         --data-file=drive_token.json
+gcloud secrets versions add anthropic-api-key   --data-file=- <<<'sk-ant-...'
+gcloud secrets versions add dropbox-refresh-token --data-file=- <<<'sl.your-token'
+gcloud secrets versions add oauth-client-id     --data-file=- <<<'...apps.googleusercontent.com'
+gcloud secrets versions add oauth-client-secret --data-file=- <<<'GOCSPX-...'
+```
+
+### Build + deploy
+
+```bash
+GCP_PROJECT_ID=your-project \
+ALLOWED_EMAILS='you@example.com,partner@example.com' \
+DRIVE_ROOT_FOLDER_ID='0AAB...' \
+DOCUMENT_AI_PROCESSOR_ID='your-processor-id' \
+./scripts/cloud-run/deploy.sh
+```
+
+The script builds the image with Cloud Build, deploys to Cloud Run with the
+Cloud SQL connector wired (`--add-cloudsql-instances`), and mounts every
+Secret Manager secret as an env var. The container's entrypoint runs
+`alembic upgrade head` before starting uvicorn, so each deploy applies any
+new migrations.
+
+### Wire Cloud Scheduler (one-shot, after first deploy)
+
+`scripts/cloud-run/setup_infra.sh` prints the exact commands for the two cron
+jobs at the end of its run (`poll-sources` every 15 minutes,
+`summary-digest` weekly Monday 7am Australia/Sydney). Both authenticate via
+the auto-generated `internal-api-key` in the `X-Internal-Key` header.
+
+## Demo mode (no Google credentials)
+
+Want to feature-test before wiring credentials? Set the demo env vars and
+run the worker CLI — see the M3 docs in this README for the full recipe.
+
 ## Layout
 
 ```
