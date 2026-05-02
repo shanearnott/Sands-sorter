@@ -164,7 +164,11 @@ def process_item(
         and classification.scope_proposal_name is None
         and classification.category_proposal_name is None
     )
-    auto_ok = fully_resolved and classification.confidence >= threshold
+    # Dry-run jobs never auto-file: every item lands in the awaiting queue
+    # so the user can review the proposed Drive path before any upload.
+    auto_ok = (
+        fully_resolved and classification.confidence >= threshold and not job.dry_run
+    )
 
     # Compute the proposed Drive path + FY using the resolved scope (if any).
     scope = (

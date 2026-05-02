@@ -58,3 +58,19 @@ def evaluate(db: Session, inp: RuleInput) -> RuleHit | None:
                 confidence=rule.confidence,
             )
     return None
+
+
+def evaluate_all(db: Session, inp: RuleInput) -> list[tuple[Rule, bool]]:
+    """Evaluate **every** rule (enabled or not) against `inp`. Used by the
+    `/rules/test` page so the user can see which rules would match given
+    sample text, in priority order. The first hit among enabled rules is
+    the one that fires in production.
+    """
+    stmt = select(Rule).order_by(Rule.priority.asc(), Rule.id.asc())
+    return [(rule, _matches(rule, inp)) for rule in db.scalars(stmt)]
+
+
+def matches(rule: Rule, inp: RuleInput) -> bool:
+    """Public re-export of the match check for callers that already have a
+    `Rule` instance and just want to know if it would fire."""
+    return _matches(rule, inp)

@@ -15,7 +15,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import current_user, optional_user
+from app.classifier import rules as rules_engine
 from app.classifier.llm import ClaudeFallback
+from app.classifier.rules import RuleInput
 from app.config import get_settings
 from app.db import get_db
 from app.drive.credentials import load_drive_credentials
@@ -71,6 +73,7 @@ def import_index(
 def import_create(
     source_kind: str = Form(...),
     source_ref: str = Form(...),
+    dry_run: bool = Form(False),
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
 ):
@@ -93,6 +96,7 @@ def import_create(
         source_ref=source_ref,
         status=ImportJobStatus.running,
         started_at=datetime.utcnow(),
+        dry_run=bool(dry_run),
     )
     db.add(job)
     db.commit()
@@ -292,6 +296,74 @@ def rules_toggle(
         rule.enabled = not rule.enabled
         db.commit()
     return RedirectResponse(url="/rules", status_code=302)
+
+
+# --- Rule tester ----------------------------------------------------------
+
+@router.get("/rules/test", response_class=HTMLResponse)
+def rules_test_form(
+    request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
+):
+    return _render_rules_test(request, db, sample_text="", sender_email="", filename="")
+
+
+@router.post("/rules/test", response_class=HTMLResponse)
+def rules_test_run(
+    request: Request,
+    sample_text: str = Form(""),
+    sender_email: str = Form(""),
+    filename: str = Form(""),
+    db: Session = Depends(get_db),
+    _: str = Depends(current_user),
+):
+    return _render_rules_test(
+        request,
+        db,
+        sample_text=sample_text,
+        sender_email=sender_email,
+        filename=filename,
+        evaluate=True,
+    )
+
+
+def _render_rules_test(
+    request: Request,
+    db: Session,
+    *,
+    sample_text: str,
+    sender_email: str,
+    filename: str,
+    evaluate: bool = False,
+):
+    results: list[dict] = []
+    winner_id: int | None = None
+    if evaluate:
+        inp = RuleInput(
+            filename=filename or "",
+            sender_email=sender_email or None,
+            ocr_text=sample_text or None,
+        )
+        for rule, hit in rules_engine.evaluate_all(db, inp):
+            results.append({"rule": rule, "hit": hit})
+            if hit and rule.enabled and winner_id is None:
+                winner_id = rule.id
+
+    scopes = {s.id: s for s in db.scalars(select(Scope))}
+    categories = {c.id: c for c in db.scalars(select(Category))}
+    return templates.TemplateResponse(
+        "rules_test.html",
+        _ctx(
+            request,
+            sample_text=sample_text,
+            sender_email=sender_email,
+            filename=filename,
+            evaluated=evaluate,
+            results=results,
+            winner_id=winner_id,
+            scopes=scopes,
+            categories=categories,
+        ),
+    )
 
 
 # --- /moves (recent processed documents) ----------------------------------

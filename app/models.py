@@ -268,6 +268,7 @@ class ImportJob(Base, TimestampMixin):
     )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     total_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     copied_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     skipped_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

@@ -247,6 +247,55 @@ def test_process_item_skips_duplicates():
     assert job.skipped_count == 1
 
 
+def test_process_item_dry_run_forces_awaiting_even_for_high_confidence():
+    db, scope, cat, job = _setup()
+    job.dry_run = True
+    db.commit()
+    wizard.enqueue_items(db, job, FakeSource([_src("origin.pdf")]))
+    item = db.query(ImportItem).first()
+
+    fields = InvoiceFields(
+        text="ORIGIN ENERGY invoice",
+        counterparty="Origin Energy",
+        amount_cents=8900,
+        currency="AUD",
+        doc_date=date(2025, 9, 1),
+        due_date=None,
+        account_number=None,
+        raw_entities={},
+    )
+    llm = FakeLLM(
+        LLMSuggestion(
+            scope_name="Beach House",
+            scope_kind_hint=None,
+            category_name="Electricity",
+            direction=Direction.expense,
+            counterparty="Origin Energy",
+            confidence=0.99,                # well above the threshold
+            reasoning="ok",
+            new_scope=False,
+            new_category=False,
+        )
+    )
+    uploader = FakeUploader()
+
+    status = wizard.process_item(
+        db,
+        item,
+        fetch_bytes=lambda _i: b"PDFBYTES",
+        extractor=FakeExtractor(fields),
+        llm=llm,
+        uploader=uploader,
+    )
+    assert status == ImportItemStatus.awaiting
+    assert uploader.uploads == []  # no real upload happened
+    db.refresh(item)
+    # The proposed path is still computed and stored so the UI can show it
+    assert item.proposed_drive_path == "Properties/Beach House/Electricity/origin.pdf"
+    assert job.copied_count == 0
+    assert job.awaiting_count == 1
+
+
 def test_apply_decision_files_and_optionally_creates_rule():
     db, scope, cat, job = _setup()
     wizard.enqueue_items(db, job, FakeSource([_src("new.pdf")]))

@@ -12,7 +12,7 @@ reassign misfiles, and a small web UI lets you train classification rules.
 
 ## Status
 
-This branch contains **M1, M2, M2.1, M2.2** of the plan in
+This branch contains **M1, M2, M2.1, M2.2, M2.3** of the plan in
 `/root/.claude/plans/1-i-have-subscription-piped-candle.md`:
 
 **M1 (foundation):**
@@ -38,6 +38,11 @@ This branch contains **M1, M2, M2.1, M2.2** of the plan in
 - Drive layout flattens: `<Kind>/<Name?>/<Category>/<file>` (no more `FY<YYYY>/`). FY stays as metadata on `processed_documents.financial_year`.
 - New `/scopes/<id>` page lists every filed document for a scope, grouped by financial year (descending). Each FY group has a `Download FY<YYYY>.zip` button that streams a memory-efficient zip of every file in that scope+FY (Drive bytes piped through `zipstream-ng`).
 - `/cars` and `/life` removed; `/personal` and `/entities` added; nav updated.
+
+**M2.3 (importer preview + rule tester):**
+- `/import` form gets a "Preview only" checkbox. Preview jobs run the full pipeline (hash → OCR → classify) but **never auto-file**, even on high confidence — every item lands in the awaiting queue with its proposed Drive path visible. Approving an item still does the real upload, so a preview can be promoted to a real run incrementally.
+- `/rules/test` lets you paste sample text (plus optional sender email + filename) and see which rules match, in priority order, with the winning rule highlighted. Disabled rules and lower-priority matches are shown for context.
+- `evaluate_all()` and public `matches()` helpers in `app/classifier/rules.py`.
 
 Later milestones (Dropbox poller, OCR, rules + LLM classifier, Gmail pollers,
 daily digest, full training UI) live as stubs alongside the M1 code.

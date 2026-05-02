@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from app.classifier.rules import RuleInput, evaluate
+from app.classifier.rules import RuleInput, evaluate, evaluate_all, matches
 from app.models import Base, Category, MatchType, Rule, Scope, ScopeKind
 
 
@@ -118,3 +118,58 @@ def test_no_match_returns_none():
         evaluate(db, RuleInput(filename="x", sender_email=None, ocr_text="totally different"))
         is None
     )
+
+
+def test_evaluate_all_returns_every_rule_with_match_status():
+    db, scope, cat = _setup()
+    db.add_all(
+        [
+            Rule(
+                match_type=MatchType.contains,
+                pattern="energy",
+                scope_id=scope.id,
+                category_id=cat.id,
+                priority=10,
+            ),
+            Rule(
+                match_type=MatchType.contains,
+                pattern="water",
+                scope_id=scope.id,
+                category_id=cat.id,
+                priority=20,
+            ),
+            Rule(
+                match_type=MatchType.contains,
+                pattern="origin",
+                scope_id=scope.id,
+                category_id=cat.id,
+                priority=30,
+                enabled=False,
+            ),
+        ]
+    )
+    db.commit()
+    results = evaluate_all(
+        db, RuleInput(filename="x", sender_email=None, ocr_text="Origin Energy invoice")
+    )
+    # Three rules, ordered by priority asc; all enabled flag respected in payload
+    patterns = [(r.pattern, hit, r.enabled) for r, hit in results]
+    assert patterns == [
+        ("energy", True, True),
+        ("water", False, True),
+        ("origin", True, False),
+    ]
+
+
+def test_matches_public_helper():
+    db, scope, cat = _setup()
+    rule = Rule(
+        match_type=MatchType.sender_email,
+        pattern="airbnb.com",
+        scope_id=scope.id,
+        category_id=cat.id,
+    )
+    db.add(rule)
+    db.commit()
+    assert matches(rule, RuleInput(filename="x", sender_email="noreply@airbnb.com", ocr_text=None))
+    assert not matches(rule, RuleInput(filename="x", sender_email="other@example.com", ocr_text=None))
