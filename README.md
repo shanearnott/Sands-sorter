@@ -12,7 +12,7 @@ reassign misfiles, and a small web UI lets you train classification rules.
 
 ## Status
 
-This branch contains **M1, M2, M2.1, M2.2, M2.3** of the plan in
+This branch contains **M1 through M5** of the plan in
 `/root/.claude/plans/1-i-have-subscription-piped-candle.md`:
 
 **M1 (foundation):**
@@ -43,6 +43,42 @@ This branch contains **M1, M2, M2.1, M2.2, M2.3** of the plan in
 - `/import` form gets a "Preview only" checkbox. Preview jobs run the full pipeline (hash → OCR → classify) but **never auto-file**, even on high confidence — every item lands in the awaiting queue with its proposed Drive path visible. Approving an item still does the real upload, so a preview can be promoted to a real run incrementally.
 - `/rules/test` lets you paste sample text (plus optional sender email + filename) and see which rules match, in priority order, with the winning rule highlighted. Disabled rules and lower-priority matches are shown for context.
 - `evaluate_all()` and public `matches()` helpers in `app/classifier/rules.py`.
+
+**M3 (live ingestion + demo mode):**
+- Pollers package: `gmail.py` and `dropbox.py` for the live path; `local_mailbox.py` and `local_dropbox.py` for demo. Demo pollers walk a local folder shaped like the real source (`.eml` files for mailbox, any supported file for Dropbox).
+- `FakeDriveUploader` writes to `DEMO_DRIVE_ROOT/<path>` so the full pipeline works without Google Drive credentials.
+- Fallback OCR via `pdfplumber` + `pytesseract` so demo runs without Document AI.
+- Shared `app/pipeline.py` (`process_raw_doc`) runs: PDF password vault → HEIC normalisation → body-PDF render → SHA dedup → OCR → classifier (rules → LLM) → Drive upload → `ProcessedDocument` row + source-cleanup ack.
+- **PDF password vault**: `/passwords` CRUD, with sender + filename matchers; `pikepdf`-based decrypt; encrypted PDFs that can't be unlocked land in Unsorted with a clear error.
+- **HEIC normalisation** via `pillow-heif` (iPhone screenshots).
+- **Body-PDF rendering** via WeasyPrint for senders on the source's `body_allowlist` — only fires when there's no attachment.
+- **Summary digest**: builds a per-scope HTML (Income / Expenses / Net) with a "Please review" pin for Unsorted items. Sends via Gmail when configured, otherwise writes to `DEMO_DIGEST_DIR/digest-<timestamp>.html`.
+- Worker CLI: `python -m app.worker poll` and `python -m app.worker summarize` (and `backfill-extractions`).
+- HTTP endpoints: `POST /internal/poll`, `POST /internal/summary` for Cloud Scheduler.
+
+**M4 (training UX polish):**
+- `/vendors` CRUD with default scope/category/direction.
+- `/sources` health page: Gmail/Dropbox connection status, body-PDF allowlist editor, enable/disable toggle, last-polled timestamp + last-error display.
+- `/unsorted` queue: every Unsorted-status doc with an inline reassign form (scope + category + direction + "save as rule").
+- `POST /moves/<doc_id>/reassign` updates a filed doc and optionally saves a learned rule.
+
+**M5 (graphical overview):**
+- `/scopes/<id>` gets four Chart.js charts (monthly income/expense/net bars, category donut, top-vendors horizontal bar, per-vendor monthly trend) above the FY-grouped tables.
+- `/overview` cross-scope page with FY filter and per-scope monthly net lines.
+- JSON endpoints under `/reports/...` drive the charts (cacheable, JSON-friendly shapes).
+- CSV + XLSX export per scope+FY at `/scopes/<id>/export.csv` and `.xlsx`.
+- `python -m app.worker backfill-extractions` re-OCRs filed docs that are missing `document_extractions`.
+
+**Demo mode env vars (no Google auth required):**
+```
+DEMO_DROPBOX_ROOT=/path/to/local/dropbox     # poller watches inbox/, moves to processed/
+DEMO_MAILBOX_ROOT=/path/to/local/mailbox     # poller reads inbox/*.eml
+DEMO_DRIVE_ROOT=/path/to/local/drive          # FakeDriveUploader writes here
+DEMO_DIGEST_DIR=/path/to/digests              # digest HTML lands here
+DEMO_OCR=1                                    # forces local OCR even if Document AI is set
+ANTHROPIC_API_KEY=...                          # optional — enables LLM fallback
+```
+First poll auto-seeds demo `Source` rows; or add real ones via `/sources` once you have credentials.
 
 Later milestones (Dropbox poller, OCR, rules + LLM classifier, Gmail pollers,
 daily digest, full training UI) live as stubs alongside the M1 code.

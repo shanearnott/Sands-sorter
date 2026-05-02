@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Overview · Sands-sorter{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold">Overview</h1>
+  <form method="get" class="flex items-center gap-2">
+    <label class="text-sm text-slate-600">Financial year:</label>
+    <select name="fy" class="border rounded px-2 py-1 text-sm" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for y in fys %}
+        <option value="{{ y }}" {% if fy == y %}selected{% endif %}>FY{{ y }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<section class="bg-white rounded-lg shadow p-6 mb-6">
+  <h2 class="font-semibold mb-3">Net per scope, by month</h2>
+  <canvas id="ch-overview" height="120"></canvas>
+</section>
+
+<section class="bg-white rounded-lg shadow p-6">
+  <h2 class="font-semibold mb-3">Scopes</h2>
+  <ul class="grid grid-cols-2 gap-x-6 text-sm">
+    {% for s in scopes %}
+      <li class="py-1">
+        <a href="/scopes/{{ s.id }}" class="text-blue-600 hover:underline">{{ s.name }}</a>
+        <span class="text-slate-500">{{ s.kind.value }} · {{ s.country.value }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="/static/charts.js"></script>
+<script>
+  SandsCharts.renderOverview(document.getElementById("ch-overview"), {{ fy or 'null' }});
+</script>
+{% endblock %}

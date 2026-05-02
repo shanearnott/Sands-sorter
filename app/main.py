@@ -10,6 +10,10 @@ from app import auth
 from app.config import get_settings
 from app.utils.logging import configure_logging
 from app.web.import_routes import router as import_router
+from app.web.internal_routes import router as internal_router
+from app.web.m4_routes import router as m4_router
+from app.web.m5_routes import router as m5_router
+from app.web.password_routes import router as password_router
 from app.web.routes import router as web_router
 from app.web.scope_routes import router as scope_router
 
@@ -30,6 +34,10 @@ def create_app() -> FastAPI:
     app.include_router(web_router)
     app.include_router(import_router)
     app.include_router(scope_router)
+    app.include_router(password_router)
+    app.include_router(m4_router)
+    app.include_router(m5_router)
+    app.include_router(internal_router)
 
     @app.get("/auth/login")
     async def login(request: Request):

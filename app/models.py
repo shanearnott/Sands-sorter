@@ -160,6 +160,9 @@ class Source(Base, TimestampMixin):
     oauth_secret_name: Mapped[str | None] = mapped_column(String(200))
     cursor: Mapped[str | None] = mapped_column(String(500))
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    body_allowlist: Mapped[list[str] | None] = mapped_column(JSON)
+    last_polled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (UniqueConstraint("kind", "label", name="uq_source_kind_label"),)
 
@@ -330,6 +333,20 @@ class SummaryRun(Base, TimestampMixin):
     income_total_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     expense_total_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     message_id: Mapped[str | None] = mapped_column(String(200))
+
+
+class PdfPassword(Base, TimestampMixin):
+    """Vault entry for password-protected PDFs. Tried in priority order
+    (lower number wins), with sender/filename matchers favoured first."""
+
+    __tablename__ = "pdf_passwords"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    label: Mapped[str] = mapped_column(String(160))
+    password: Mapped[str] = mapped_column(String(500))         # encrypted at rest
+    sender_match: Mapped[str | None] = mapped_column(String(200))
+    filename_match: Mapped[str | None] = mapped_column(String(200))
+    priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
 
 
 PERSONAL_SCOPE_NAME = "Personal"

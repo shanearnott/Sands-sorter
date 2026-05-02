@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Unsorted · Sands-sorter{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Unsorted queue</h1>
+
+<section class="bg-white rounded-lg shadow p-6">
+  {% if docs %}
+    <p class="text-sm text-slate-600 mb-3">
+      These documents landed in <code>Unsorted/</code> because the classifier
+      wasn't confident or no rule matched. Reassign them to teach the system.
+    </p>
+    <ul class="divide-y">
+      {% for d in docs %}
+        <li class="py-4">
+          <div class="flex items-center justify-between text-sm">
+            <div class="font-medium">{{ d.original_filename }}</div>
+            <div class="text-slate-500">
+              conf {{ '%.2f' % (d.confidence or 0) }}
+              {% if d.error %}<span class="ml-2 text-red-700">{{ d.error }}</span>{% endif %}
+            </div>
+          </div>
+          {% if d.extraction %}
+            <div class="text-sm text-slate-600 mt-1">
+              {% if d.extraction.counterparty_text %}
+                <span class="font-medium">{{ d.extraction.counterparty_text }}</span>
+              {% endif %}
+              {% if d.extraction.amount_cents %}
+                <span class="ml-2">{{ d.extraction.currency or '' }}
+                  {{ '%.2f' % (d.extraction.amount_cents / 100) }}
+                </span>
+              {% endif %}
+              {% if d.extraction.doc_date %}
+                <span class="ml-2 text-slate-500">{{ d.extraction.doc_date.isoformat() }}</span>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <form method="post" action="/moves/{{ d.id }}/reassign"
+                class="mt-3 grid grid-cols-[1fr_1fr_8rem_1fr_auto_auto] gap-2 items-end">
+            <label><span class="block text-xs text-slate-500">Scope</span>
+              <select name="scope_id" required class="w-full border rounded px-2 py-1 text-sm">
+                {% for s in scopes %}
+                  <option value="{{ s.id }}">{{ s.kind.value }}: {{ s.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label><span class="block text-xs text-slate-500">Category</span>
+              <select name="category_id" required class="w-full border rounded px-2 py-1 text-sm">
+                {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+              </select>
+            </label>
+            <label><span class="block text-xs text-slate-500">Direction</span>
+              <select name="direction" class="w-full border rounded px-2 py-1 text-sm">
+                {% for dir in directions %}<option value="{{ dir.value }}">{{ dir.value }}</option>{% endfor %}
+              </select>
+            </label>
+            <label><span class="block text-xs text-slate-500">Save as rule (substring)</span>
+              <input name="rule_pattern" value="{{ (d.extraction.counterparty_text if d.extraction else '') or '' }}"
+                class="w-full border rounded px-2 py-1 text-sm">
+            </label>
+            <label class="flex items-center gap-1 text-xs text-slate-600 mb-1">
+              <input type="checkbox" name="save_as_rule" value="true" checked>
+              save
+            </label>
+            <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">Reassign</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-slate-500">Nothing unsorted right now.</p>
+  {% endif %}
+</section>
+{% endblock %}

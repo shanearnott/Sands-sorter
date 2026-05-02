@@ -14,13 +14,18 @@
       <nav class="flex gap-4 text-sm">
         {% if user_email %}
           <a href="/" class="hover:underline">Dashboard</a>
+          <a href="/overview" class="hover:underline">Overview</a>
           <a href="/import" class="hover:underline">Import</a>
           <a href="/moves" class="hover:underline">Moves</a>
+          <a href="/unsorted" class="hover:underline">Unsorted</a>
           <a href="/rules" class="hover:underline">Rules</a>
+          <a href="/sources" class="hover:underline">Sources</a>
+          <a href="/vendors" class="hover:underline">Vendors</a>
           <a href="/properties" class="hover:underline">Properties</a>
           <a href="/entities" class="hover:underline">Entities</a>
           <a href="/personal" class="hover:underline">Personal</a>
           <a href="/categories" class="hover:underline">Categories</a>
+          <a href="/passwords" class="hover:underline">Passwords</a>
           <a href="/upload" class="hover:underline">Upload</a>
           <span class="text-slate-500">{{ user_email }}</span>
           <a href="/auth/logout" class="text-slate-500 hover:underline">Sign out</a>

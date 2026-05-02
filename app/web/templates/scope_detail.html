@@ -15,17 +15,55 @@
   <p class="text-slate-500">No filed documents yet for this scope.</p>
 {% endif %}
 
+{% if groups %}
+  {% set top = groups[0] %}
+  <section class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-xl font-semibold mb-4">
+      {{ top.label }} dashboard
+      <span class="ml-2 text-sm text-slate-500 font-normal">{{ top.docs | length }} files</span>
+    </h2>
+    <div class="grid grid-cols-2 gap-6">
+      <div><canvas id="ch-monthly"></canvas></div>
+      <div><canvas id="ch-category"></canvas></div>
+      <div><canvas id="ch-vendors"></canvas></div>
+      <div><canvas id="ch-trend"></canvas></div>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <a href="/scopes/{{ scope.id }}/export.csv?fy={{ top.fy }}"
+         class="bg-slate-700 text-white px-3 py-1.5 rounded hover:bg-slate-800 text-sm">
+        Export CSV
+      </a>
+      <a href="/scopes/{{ scope.id }}/export.xlsx?fy={{ top.fy }}"
+         class="bg-slate-700 text-white px-3 py-1.5 rounded hover:bg-slate-800 text-sm">
+        Export XLSX
+      </a>
+      {% if top.fy %}
+        <a href="/scopes/{{ scope.id }}/download.zip?fy={{ top.fy }}"
+           class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 text-sm">
+          Download {{ top.label }}.zip
+        </a>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}
+
 {% for g in groups %}
   <section class="bg-white rounded-lg shadow p-6 mb-6">
     <header class="flex items-center justify-between mb-3">
-      <h2 class="text-xl font-semibold">{{ g.label }}
+      <h3 class="text-lg font-semibold">{{ g.label }}
         <span class="ml-2 text-sm text-slate-500 font-normal">{{ g.docs | length }} files</span>
-      </h2>
+      </h3>
       {% if g.fy %}
-        <a href="/scopes/{{ scope.id }}/download.zip?fy={{ g.fy }}"
-           class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 text-sm">
-          Download {{ g.label }}.zip
-        </a>
+        <div class="space-x-2">
+          <a href="/scopes/{{ scope.id }}/export.csv?fy={{ g.fy }}"
+             class="text-sm text-slate-600 hover:underline">CSV</a>
+          <a href="/scopes/{{ scope.id }}/export.xlsx?fy={{ g.fy }}"
+             class="text-sm text-slate-600 hover:underline">XLSX</a>
+          <a href="/scopes/{{ scope.id }}/download.zip?fy={{ g.fy }}"
+             class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 text-sm">
+            Download {{ g.label }}.zip
+          </a>
+        </div>
       {% endif %}
     </header>
     <table class="w-full text-sm">
@@ -75,4 +113,19 @@
     </table>
   </section>
 {% endfor %}
+
+{% if groups %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="/static/charts.js"></script>
+  <script>
+    (function () {
+      const scopeId = {{ scope.id }};
+      const fy = {{ groups[0].fy or 'null' }};
+      SandsCharts.renderMonthly(document.getElementById("ch-monthly"), scopeId, fy);
+      SandsCharts.renderCategory(document.getElementById("ch-category"), scopeId, fy);
+      SandsCharts.renderTopVendors(document.getElementById("ch-vendors"), scopeId, fy);
+      SandsCharts.renderVendorTrend(document.getElementById("ch-trend"), scopeId, fy);
+    })();
+  </script>
+{% endif %}
 {% endblock %}

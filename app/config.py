@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0)
     ocr_text_retention_days: int = 90
 
+    # Demo / no-credentials mode. When set, M3 falls back to local stand-ins.
+    demo_drive_root: str = ""           # writes files here instead of Drive
+    demo_dropbox_root: str = ""         # poller watches this folder
+    demo_mailbox_root: str = ""         # poller reads .eml files from here
+    demo_digest_dir: str = ""           # writes summary HTML here
+    demo_ocr: bool = False              # forces local OCR even if Document AI is set
+
     @property
     def allowed_emails_list(self) -> list[str]:
         return [e.strip().lower() for e in self.allowed_emails.split(",") if e.strip()]
