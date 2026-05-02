@@ -12,7 +12,7 @@ reassign misfiles, and a small web UI lets you train classification rules.
 
 ## Status
 
-This branch contains **M1 and M2** of the plan in
+This branch contains **M1, M2, M2.1, M2.2** of the plan in
 `/root/.claude/plans/1-i-have-subscription-piped-candle.md`:
 
 **M1 (foundation):**
@@ -30,7 +30,14 @@ This branch contains **M1 and M2** of the plan in
 - Recursive importer with `LocalTreeSource` (path on disk) and `DriveTreeSource` (Drive folder).
 - `/import` wizard — start a job, process pending items in batches, decide on awaiting items (with optional "save as rule"). Originals are copied; the source folder is left untouched.
 - `/rules` CRUD, `/moves` recent-documents view.
-- 53 unit tests covering hashing, FY math, kind-aware path building, rules engine, Document AI extraction parsing, LLM JSON parsing, classifier pipeline, source iterators, and the wizard end-to-end.
+- 56 unit tests covering hashing, FY math, kind-aware path building, rules engine, Document AI extraction parsing, LLM JSON parsing, classifier pipeline, source iterators, the wizard end-to-end, and FY-grouping for the per-scope view.
+
+**M2.1 (scope kinds refactor) + M2.2 (FY out of Drive path):**
+- `ScopeKind` is now `property | personal | entity`. Cars are folded into Property (e.g. Audi S5, Tesla S sit alongside houses); Life renames to Personal; Entity is a new multi-instance kind covering trusts and companies (SANDS, Farmout).
+- Migration `202604290004` does the Postgres ENUM rename-and-replace dance, renames the singleton row to "Personal", and seeds the household's real-world inventory (9 properties + 2 entities).
+- Drive layout flattens: `<Kind>/<Name?>/<Category>/<file>` (no more `FY<YYYY>/`). FY stays as metadata on `processed_documents.financial_year`.
+- New `/scopes/<id>` page lists every filed document for a scope, grouped by financial year (descending). Each FY group has a `Download FY<YYYY>.zip` button that streams a memory-efficient zip of every file in that scope+FY (Drive bytes piped through `zipstream-ng`).
+- `/cars` and `/life` removed; `/personal` and `/entities` added; nav updated.
 
 Later milestones (Dropbox poller, OCR, rules + LLM classifier, Gmail pollers,
 daily digest, full training UI) live as stubs alongside the M1 code.

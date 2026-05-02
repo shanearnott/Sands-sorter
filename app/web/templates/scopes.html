@@ -34,7 +34,7 @@
       {% for s in scopes %}
         <li class="py-2 flex items-center justify-between">
           <span>
-            {{ s.name }}
+            <a href="/scopes/{{ s.id }}" class="text-blue-600 hover:underline">{{ s.name }}</a>
             <span class="ml-2 text-xs text-slate-500 border rounded px-1.5">{{ s.country.value }}</span>
           </span>
           <form method="post" action="{{ route_path }}/{{ s.id }}/delete">

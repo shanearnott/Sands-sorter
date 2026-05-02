@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ scope.name }} · Sands-sorter{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold">
+    {{ scope.name }}
+    <span class="ml-2 text-sm text-slate-500 font-normal">
+      {{ scope.kind.value }} · {{ scope.country.value }}
+    </span>
+  </h1>
+  <a href="/moves" class="text-sm text-blue-600 hover:underline">All moves</a>
+</div>
+
+{% if not groups %}
+  <p class="text-slate-500">No filed documents yet for this scope.</p>
+{% endif %}
+
+{% for g in groups %}
+  <section class="bg-white rounded-lg shadow p-6 mb-6">
+    <header class="flex items-center justify-between mb-3">
+      <h2 class="text-xl font-semibold">{{ g.label }}
+        <span class="ml-2 text-sm text-slate-500 font-normal">{{ g.docs | length }} files</span>
+      </h2>
+      {% if g.fy %}
+        <a href="/scopes/{{ scope.id }}/download.zip?fy={{ g.fy }}"
+           class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 text-sm">
+          Download {{ g.label }}.zip
+        </a>
+      {% endif %}
+    </header>
+    <table class="w-full text-sm">
+      <thead class="text-slate-500 text-left">
+        <tr>
+          <th class="py-2">Date</th>
+          <th>Counterparty</th>
+          <th>Category</th>
+          <th>Direction</th>
+          <th class="text-right">Amount</th>
+          <th>File</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in g.docs %}
+          <tr class="border-t">
+            <td class="py-2 text-slate-500">
+              {{ d.doc_date.isoformat() if d.doc_date else (d.filed_at.strftime('%Y-%m-%d') if d.filed_at else '—') }}
+            </td>
+            <td>{{ (d.extraction.counterparty_text if d.extraction else '') or '—' }}</td>
+            <td>{{ categories[d.category_id].name if d.category_id and categories[d.category_id] else '—' }}</td>
+            <td>
+              {% if d.direction.value == 'income' %}
+                <span class="text-green-700">in</span>
+              {% else %}
+                <span class="text-slate-600">out</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              {% if d.extraction and d.extraction.amount_cents %}
+                {{ d.extraction.currency or '' }} {{ '%.2f' % (d.extraction.amount_cents / 100) }}
+              {% else %}
+                <span class="text-slate-400">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if d.drive_file_id %}
+                <a href="https://drive.google.com/file/d/{{ d.drive_file_id }}/view"
+                   target="_blank" class="text-blue-600 hover:underline">open</a>
+              {% else %}
+                <span class="text-slate-400">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endfor %}
+{% endblock %}

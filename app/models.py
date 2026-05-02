@@ -33,8 +33,8 @@ class TimestampMixin:
 
 class ScopeKind(str, enum.Enum):
     property = "property"
-    car = "car"
-    life = "life"
+    personal = "personal"
+    entity = "entity"
 
 
 class ScopeCountry(str, enum.Enum):
@@ -83,9 +83,10 @@ _direction_enum = Enum(Direction, name="direction")
 
 
 class Scope(Base, TimestampMixin):
-    """A top-level filing target. Property, Car, or the singleton Life bucket.
-    Each scope has a country which determines its financial-year start month
-    (AU rolls 1 July, US is calendar)."""
+    """A top-level filing target. Property (houses + cars), the singleton
+    Personal bucket, or an Entity (trust or company). Each scope has a country
+    which determines its financial-year start month (AU rolls 1 July, US is
+    calendar)."""
 
     __tablename__ = "scopes"
 
@@ -330,4 +331,4 @@ class SummaryRun(Base, TimestampMixin):
     message_id: Mapped[str | None] = mapped_column(String(200))
 
 
-LIFE_SCOPE_NAME = "Life"
+PERSONAL_SCOPE_NAME = "Personal"

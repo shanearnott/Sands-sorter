@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Personal · Sands-sorter{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Personal</h1>
+
+<section class="bg-white rounded-lg shadow p-6 max-w-xl">
+  <p class="text-slate-600 mb-4">
+    Singleton bucket for general personal expenses (AMEX bills, holidays,
+    anything not tied to a specific property or entity). Files land at
+    <code>Personal/&lt;Category&gt;/</code> in your Drive. Country drives the
+    financial-year tagging used in the UI.
+  </p>
+  <form method="post" action="/personal" class="grid grid-cols-[8rem_1fr_auto] gap-3 items-end">
+    <label>
+      <span class="block text-sm text-slate-600">Country</span>
+      <select name="country" class="w-full border rounded px-2 py-1">
+        <option value="AU" {% if personal.country.value == 'AU' %}selected{% endif %}>AU</option>
+        <option value="US" {% if personal.country.value == 'US' %}selected{% endif %}>US</option>
+      </select>
+    </label>
+    <label>
+      <span class="block text-sm text-slate-600">Drive folder ID (optional)</span>
+      <input name="drive_folder_id" value="{{ personal.drive_folder_id or '' }}" class="w-full border rounded px-2 py-1">
+    </label>
+    <button class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Save</button>
+  </form>
+</section>
+{% endblock %}

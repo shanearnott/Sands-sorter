@@ -4,10 +4,11 @@
 
 <section class="bg-white rounded-lg shadow p-6 max-w-xl">
   <p class="text-sm text-slate-600 mb-4">
-    Pick a scope (Property, Car, or Life), category, and direction. Files land
-    at <code>&lt;Kind&gt;/&lt;Name?&gt;/&lt;Cat&gt;/FY&lt;YYYY&gt;/</code> with the FY
-    derived from the document's date and the scope's country (AU = 1 Jul start;
-    US = calendar).
+    Pick a scope (Property, Personal, or Entity), category, and direction.
+    Files land at <code>&lt;Kind&gt;/&lt;Name?&gt;/&lt;Cat&gt;/</code> in Drive.
+    The financial year is recorded as metadata (AU = 1 Jul start; US = calendar)
+    and shown in the per-scope view, where you can also bulk-download a year as
+    a zip.
   </p>
   <form method="post" enctype="multipart/form-data" action="/upload" class="grid gap-3">
     <label>

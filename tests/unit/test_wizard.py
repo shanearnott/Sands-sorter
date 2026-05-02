@@ -154,7 +154,7 @@ def test_process_item_auto_files_high_confidence_match():
     assert status == ImportItemStatus.copied
     assert len(uploader.uploads) == 1
     drive_path, _size, _mime = uploader.uploads[0]
-    assert drive_path == "Properties/Beach House/Electricity/FY2026/origin.pdf"
+    assert drive_path == "Properties/Beach House/Electricity/origin.pdf"
 
     db.refresh(item)
     assert item.decision_doc_id is not None

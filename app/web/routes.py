@@ -17,7 +17,7 @@ from app.drive.credentials import load_drive_credentials
 from app.drive.paths import build_path
 from app.drive.uploader import DriveUploader
 from app.models import (
-    LIFE_SCOPE_NAME,
+    PERSONAL_SCOPE_NAME,
     Category,
     Classifier,
     Direction,
@@ -45,15 +45,15 @@ def _ctx(request: Request, **extra) -> dict:
     }
 
 
-def _get_life_scope(db: Session) -> Scope:
-    """Return the Life singleton, creating it if absent (e.g. on a fresh dev DB)."""
-    life = db.scalar(select(Scope).where(Scope.kind == ScopeKind.life))
-    if life is None:
-        life = Scope(kind=ScopeKind.life, name=LIFE_SCOPE_NAME, active=True)
-        db.add(life)
+def _get_personal_scope(db: Session) -> Scope:
+    """Return the Personal singleton, creating it if absent (e.g. on a fresh dev DB)."""
+    personal = db.scalar(select(Scope).where(Scope.kind == ScopeKind.personal))
+    if personal is None:
+        personal = Scope(kind=ScopeKind.personal, name=PERSONAL_SCOPE_NAME, active=True)
+        db.add(personal)
         db.commit()
-        db.refresh(life)
-    return life
+        db.refresh(personal)
+    return personal
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -72,7 +72,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("dashboard.html", _ctx(request, recent=recent))
 
 
-# --- Scopes (Properties + Cars share a single CRUD page, kind-filtered) ---
+# --- Scopes (Properties + Entities share a single CRUD page, kind-filtered) ---
 
 def _scope_list_response(
     request: Request, db: Session, kind: ScopeKind, page_title: str, route_path: str
@@ -119,29 +119,29 @@ def properties_delete(
     return _delete_scope(db, scope_id, ScopeKind.property, "/properties")
 
 
-@router.get("/cars", response_class=HTMLResponse)
-def cars_list(
+@router.get("/entities", response_class=HTMLResponse)
+def entities_list(
     request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
-    return _scope_list_response(request, db, ScopeKind.car, "Cars", "/cars")
+    return _scope_list_response(request, db, ScopeKind.entity, "Entities", "/entities")
 
 
-@router.post("/cars")
-def cars_create(
+@router.post("/entities")
+def entities_create(
     name: str = Form(...),
     country: ScopeCountry = Form(ScopeCountry.AU),
     drive_folder_id: str = Form(""),
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
 ):
-    return _create_scope(db, ScopeKind.car, name, country, drive_folder_id, "/cars")
+    return _create_scope(db, ScopeKind.entity, name, country, drive_folder_id, "/entities")
 
 
-@router.post("/cars/{scope_id}/delete")
-def cars_delete(
+@router.post("/entities/{scope_id}/delete")
+def entities_delete(
     scope_id: int, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
-    return _delete_scope(db, scope_id, ScopeKind.car, "/cars")
+    return _delete_scope(db, scope_id, ScopeKind.entity, "/entities")
 
 
 def _create_scope(
@@ -175,26 +175,26 @@ def _delete_scope(db: Session, scope_id: int, expected_kind: ScopeKind, redirect
     return RedirectResponse(url=redirect_to, status_code=302)
 
 
-@router.get("/life", response_class=HTMLResponse)
-def life_view(
+@router.get("/personal", response_class=HTMLResponse)
+def personal_view(
     request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
-    life = _get_life_scope(db)
-    return templates.TemplateResponse("life.html", _ctx(request, life=life))
+    personal = _get_personal_scope(db)
+    return templates.TemplateResponse("personal.html", _ctx(request, personal=personal))
 
 
-@router.post("/life")
-def life_update(
+@router.post("/personal")
+def personal_update(
     country: ScopeCountry = Form(ScopeCountry.AU),
     drive_folder_id: str = Form(""),
     db: Session = Depends(get_db),
     _: str = Depends(current_user),
 ):
-    life = _get_life_scope(db)
-    life.country = country
-    life.drive_folder_id = drive_folder_id.strip() or None
+    personal = _get_personal_scope(db)
+    personal.country = country
+    personal.drive_folder_id = drive_folder_id.strip() or None
     db.commit()
-    return RedirectResponse(url="/life", status_code=302)
+    return RedirectResponse(url="/personal", status_code=302)
 
 
 # --- Categories CRUD ---
@@ -239,7 +239,7 @@ def categories_delete(
 def upload_form(
     request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
-    _get_life_scope(db)  # ensure singleton exists
+    _get_personal_scope(db)  # ensure singleton exists
     scopes = list(
         db.scalars(
             select(Scope)

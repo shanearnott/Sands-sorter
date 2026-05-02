@@ -17,7 +17,7 @@ class LLMSuggestion:
     """Structured proposal returned by the Claude fallback classifier."""
 
     scope_name: str | None
-    scope_kind_hint: str | None  # property | car | life
+    scope_kind_hint: str | None  # property | personal | entity
     category_name: str | None
     direction: Direction | None
     counterparty: str | None
@@ -42,7 +42,7 @@ _SCHEMA = {
         "scope_kind_hint": {
             "type": ["string", "null"],
             "description": (
-                "Only when proposing a NEW scope: one of 'property', 'car', 'life'. Otherwise null."
+                "Only when proposing a NEW scope: one of 'property', 'personal', 'entity'. Otherwise null."
             ),
         },
         "category_name": {
@@ -85,7 +85,7 @@ _SCHEMA = {
 
 SYSTEM_PROMPT = """You are a household-bills classifier for a personal filing app. Given OCR text of a bill or invoice plus catalogs of existing scopes and categories, identify:
 
-1. **Scope** — which property, car, or the singleton 'Life' bucket the document belongs to. Match an existing scope by name when possible. If the document is clearly about a scope not in the catalog, propose it as `NEW: <name>` and set `scope_kind_hint` to `property`, `car`, or `life`.
+1. **Scope** — one of: a Property (houses or vehicles, e.g. '141 Sydney', 'Tesla S'), the singleton 'Personal' bucket (general personal expenses like AMEX or holidays), or an Entity (a trust or company, e.g. SANDS or Farmout). Match an existing scope by name when possible. If the document is clearly about a scope not in the catalog, propose it as `NEW: <name>` and set `scope_kind_hint` to `property`, `personal`, or `entity`.
 2. **Category** — which spend category. Match existing where possible; propose `NEW: <name>` only when the document is clearly a new bucket.
 3. **Direction** — `expense` for bills we pay; `income` for rent or payouts received (Airbnb, real-estate agent statements, direct-booking deposits).
 4. **Counterparty** — the vendor or payer name as it appears in the document.
