@@ -39,7 +39,7 @@ def passwords_list(
             select(PdfPassword).order_by(PdfPassword.priority.asc(), PdfPassword.id.asc())
         )
     )
-    return templates.TemplateResponse("passwords.html", _ctx(request, items=items))
+    return templates.TemplateResponse(request, "passwords.html", _ctx(request, items=items))
 
 
 @router.post("/passwords")

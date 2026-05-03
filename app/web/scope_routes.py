@@ -87,9 +87,7 @@ def scope_detail(
     )
     groups = group_by_fy(docs)
     cat_lookup = {c.id: c for c in db.scalars(select(Category))}
-    return templates.TemplateResponse(
-        "scope_detail.html",
-        _ctx(request, scope=scope, groups=groups, categories=cat_lookup),
+    return templates.TemplateResponse(request, "scope_detail.html", _ctx(request, scope=scope, groups=groups, categories=cat_lookup),
     )
 
 

@@ -59,9 +59,15 @@ def _get_personal_scope(db: Session) -> Scope:
 
 @router.get("/", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
+    from datetime import datetime, timedelta, timezone
+
+    from sqlalchemy import func
+
+    from app.models import Direction, DocStatus, DocumentExtraction
+
     user = optional_user(request)
     if not user:
-        return templates.TemplateResponse("login.html", _ctx(request))
+        return templates.TemplateResponse(request, "login.html", _ctx(request))
 
     recent = list(
         db.scalars(
@@ -70,7 +76,64 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             .limit(20)
         )
     )
-    return templates.TemplateResponse("dashboard.html", _ctx(request, recent=recent))
+
+    # KPI stats — last 30 days vs the 30 days before that.
+    now = datetime.now(tz=timezone.utc)
+    cutoff_30 = now - timedelta(days=30)
+    cutoff_60 = now - timedelta(days=60)
+
+    def _count(*conds):
+        stmt = select(func.count(ProcessedDocument.id))
+        for c in conds:
+            stmt = stmt.where(c)
+        return db.scalar(stmt) or 0
+
+    def _amount_sum(*conds):
+        stmt = (
+            select(func.coalesce(func.sum(DocumentExtraction.amount_cents), 0))
+            .join(
+                ProcessedDocument,
+                ProcessedDocument.id == DocumentExtraction.document_id,
+            )
+        )
+        for c in conds:
+            stmt = stmt.where(c)
+        return db.scalar(stmt) or 0
+
+    filed_30 = _count(
+        ProcessedDocument.status == DocStatus.filed,
+        ProcessedDocument.created_at >= cutoff_30,
+    )
+    filed_30_prev = _count(
+        ProcessedDocument.status == DocStatus.filed,
+        ProcessedDocument.created_at >= cutoff_60,
+        ProcessedDocument.created_at < cutoff_30,
+    )
+
+    unsorted_open = _count(ProcessedDocument.status == DocStatus.unsorted)
+
+    income_30 = _amount_sum(
+        ProcessedDocument.status == DocStatus.filed,
+        ProcessedDocument.direction == Direction.income,
+        ProcessedDocument.created_at >= cutoff_30,
+    )
+    expense_30 = _amount_sum(
+        ProcessedDocument.status == DocStatus.filed,
+        ProcessedDocument.direction == Direction.expense,
+        ProcessedDocument.created_at >= cutoff_30,
+    )
+
+    kpis = {
+        "filed_30": filed_30,
+        "filed_30_prev": filed_30_prev,
+        "unsorted_open": unsorted_open,
+        "income_30_cents": income_30,
+        "expense_30_cents": expense_30,
+        "net_30_cents": income_30 - expense_30,
+    }
+
+    return templates.TemplateResponse(request, "dashboard.html", _ctx(request, recent=recent, kpis=kpis)
+    )
 
 
 # --- Scopes (Properties + Entities share a single CRUD page, kind-filtered) ---
@@ -83,9 +146,7 @@ def _scope_list_response(
             select(Scope).where(Scope.kind == kind).order_by(Scope.name)
         )
     )
-    return templates.TemplateResponse(
-        "scopes.html",
-        _ctx(
+    return templates.TemplateResponse(request, "scopes.html", _ctx(
             request,
             kind=kind,
             scopes=items,
@@ -181,7 +242,7 @@ def personal_view(
     request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
     personal = _get_personal_scope(db)
-    return templates.TemplateResponse("personal.html", _ctx(request, personal=personal))
+    return templates.TemplateResponse(request, "personal.html", _ctx(request, personal=personal))
 
 
 @router.post("/personal")
@@ -205,7 +266,7 @@ def categories_list(
     request: Request, db: Session = Depends(get_db), _: str = Depends(current_user)
 ):
     items = list(db.scalars(select(Category).order_by(Category.sort_order, Category.name)))
-    return templates.TemplateResponse("categories.html", _ctx(request, categories=items))
+    return templates.TemplateResponse(request, "categories.html", _ctx(request, categories=items))
 
 
 @router.post("/categories")
@@ -251,8 +312,7 @@ def upload_form(
     categories = list(
         db.scalars(select(Category).order_by(Category.sort_order, Category.name))
     )
-    return templates.TemplateResponse(
-        "upload.html", _ctx(request, scopes=scopes, categories=categories)
+    return templates.TemplateResponse(request, "upload.html", _ctx(request, scopes=scopes, categories=categories)
     )
 
 
@@ -290,9 +350,7 @@ async def upload_submit(
     digest = sha256_bytes(data)
     existing = db.scalar(select(ProcessedDocument).where(ProcessedDocument.sha256 == digest))
     if existing:
-        return templates.TemplateResponse(
-            "upload_result.html",
-            _ctx(request, duplicate=True, doc=existing, link=None),
+        return templates.TemplateResponse(request, "upload_result.html", _ctx(request, duplicate=True, doc=existing, link=None),
         )
 
     path, fy_end = build_path(
@@ -326,7 +384,5 @@ async def upload_submit(
     db.add(doc)
     db.commit()
     db.refresh(doc)
-    return templates.TemplateResponse(
-        "upload_result.html",
-        _ctx(request, doc=doc, link=result.web_view_link, duplicate=False),
+    return templates.TemplateResponse(request, "upload_result.html", _ctx(request, doc=doc, link=result.web_view_link, duplicate=False),
     )

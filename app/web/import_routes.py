@@ -67,7 +67,7 @@ def import_index(
     jobs = list(
         db.scalars(select(ImportJob).order_by(ImportJob.created_at.desc()).limit(20))
     )
-    return templates.TemplateResponse("import_index.html", _ctx(request, jobs=jobs))
+    return templates.TemplateResponse(request, "import_index.html", _ctx(request, jobs=jobs))
 
 
 @router.post("/import")
@@ -134,9 +134,7 @@ def import_show(
     scopes = list(db.scalars(select(Scope).where(Scope.active.is_(True)).order_by(Scope.kind, Scope.name)))
     categories = list(db.scalars(select(Category).order_by(Category.name)))
 
-    return templates.TemplateResponse(
-        "import_show.html",
-        _ctx(
+    return templates.TemplateResponse(request, "import_show.html", _ctx(
             request,
             job=job,
             has_pending=pending is not None,
@@ -233,9 +231,7 @@ def rules_list(
     )
     scopes = list(db.scalars(select(Scope).where(Scope.active.is_(True)).order_by(Scope.kind, Scope.name)))
     categories = list(db.scalars(select(Category).order_by(Category.name)))
-    return templates.TemplateResponse(
-        "rules.html",
-        _ctx(
+    return templates.TemplateResponse(request, "rules.html", _ctx(
             request,
             rules=rules,
             scopes=scopes,
@@ -351,9 +347,7 @@ def _render_rules_test(
 
     scopes = {s.id: s for s in db.scalars(select(Scope))}
     categories = {c.id: c for c in db.scalars(select(Category))}
-    return templates.TemplateResponse(
-        "rules_test.html",
-        _ctx(
+    return templates.TemplateResponse(request, "rules_test.html", _ctx(
             request,
             sample_text=sample_text,
             sender_email=sender_email,
@@ -382,9 +376,7 @@ def moves_list(
     )
     scope_lookup = {s.id: s for s in db.scalars(select(Scope))}
     cat_lookup = {c.id: c for c in db.scalars(select(Category))}
-    return templates.TemplateResponse(
-        "moves.html",
-        _ctx(request, docs=docs, scopes=scope_lookup, categories=cat_lookup),
+    return templates.TemplateResponse(request, "moves.html", _ctx(request, docs=docs, scopes=scope_lookup, categories=cat_lookup),
     )
 
 

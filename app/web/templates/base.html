@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
   <script>
@@ -48,31 +49,31 @@
     }
     @layer components {
       /* ---- Layout ---- */
-      .page-title { @apply text-2xl font-semibold tracking-tight text-slate-900; }
-      .page-subtitle { @apply mt-1 text-sm text-slate-500; }
-      .page-header { @apply flex flex-wrap items-end justify-between gap-4 mb-6 pb-4 border-b border-slate-200; }
+      .page-title { @apply text-[1.65rem] font-semibold tracking-tight text-slate-900 leading-tight; }
+      .page-subtitle { @apply mt-1.5 text-sm text-slate-500 leading-relaxed; }
+      .page-header { @apply flex flex-wrap items-start justify-between gap-4 mb-7 pb-5 border-b border-slate-200/80; }
 
       /* ---- Cards ---- */
-      .card { @apply bg-white rounded-xl shadow-card border border-slate-200/60; }
+      .card { @apply bg-white rounded-xl border border-slate-200/70 shadow-card; }
       .card-padded { @apply card p-6; }
-      .card-section + .card-section { @apply border-t border-slate-200; }
-      .card-header { @apply px-6 py-4 border-b border-slate-200 flex items-center justify-between; }
+      .card-section + .card-section { @apply border-t border-slate-200/70; }
+      .card-header { @apply px-6 py-4 border-b border-slate-200/70 flex items-center justify-between gap-4; }
       .card-body { @apply p-6; }
-      .card-title { @apply text-base font-semibold text-slate-900; }
-      .card-subtitle { @apply text-sm text-slate-500 mt-1; }
+      .card-footer { @apply px-6 py-3 border-t border-slate-200/70 bg-slate-50/40 rounded-b-xl text-sm text-slate-500 flex items-center justify-between; }
+      .card-title { @apply text-[15px] font-semibold text-slate-900 tracking-tight; }
+      .card-subtitle { @apply text-[13px] text-slate-500 mt-0.5; }
 
       /* ---- Buttons ---- */
       .btn {
         @apply inline-flex items-center justify-center gap-1.5
-               px-3.5 py-2 text-sm font-medium rounded-lg
+               px-3.5 py-[7px] text-[13px] font-medium rounded-lg
                border border-transparent
-               transition-all duration-150
-               focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-500
+               focus:outline-none
                disabled:opacity-50 disabled:cursor-not-allowed;
       }
-      .btn-sm { @apply px-2.5 py-1 text-xs gap-1; }
-      .btn-primary  { @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700; }
-      .btn-secondary{ @apply bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-sm; }
+      .btn-sm { @apply px-2.5 py-1 text-[11.5px] gap-1; }
+      .btn-primary  { @apply bg-brand-600 text-white hover:bg-brand-700; }
+      .btn-secondary{ @apply bg-white text-slate-800 border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm; }
       .btn-ghost    { @apply bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900; }
       .btn-danger   { @apply bg-rose-600 text-white shadow-sm hover:bg-rose-700; }
 
@@ -82,38 +83,45 @@
 
       /* ---- Forms ---- */
       .field { @apply block; }
-      .label { @apply block text-xs font-medium text-slate-600 uppercase tracking-wide mb-1; }
-      .label-lg { @apply block text-sm font-medium text-slate-700 mb-1.5; }
-      .hint  { @apply mt-1 text-xs text-slate-500; }
+      .label { @apply block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5; }
+      .label-lg { @apply block text-[13px] font-medium text-slate-700 mb-1.5; }
+      .hint  { @apply mt-1 text-xs text-slate-500 leading-relaxed; }
       .input,
       input[type="text"]:not(.bare),
       input[type="password"]:not(.bare),
       input[type="email"]:not(.bare),
       input[type="number"]:not(.bare),
       input[type="date"]:not(.bare),
+      input[type="search"]:not(.bare),
       select:not(.bare),
       textarea:not(.bare) {
-        @apply block w-full rounded-lg border-slate-300 bg-white shadow-sm
-               text-sm text-slate-900 placeholder-slate-400
-               focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30
-               transition-shadow;
+        @apply block w-full rounded-lg border border-slate-300 bg-white
+               text-[13.5px] text-slate-900 placeholder-slate-400
+               px-3 py-[7px]
+               focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15;
+        transition: box-shadow 150ms ease, border-color 150ms ease;
       }
       input[type="file"] {
         @apply block w-full text-sm text-slate-700
                file:mr-3 file:py-1.5 file:px-3 file:rounded-md
                file:border-0 file:bg-brand-50 file:text-brand-700
-               file:text-xs file:font-medium hover:file:bg-brand-100;
+               file:text-xs file:font-medium hover:file:bg-brand-100
+               file:cursor-pointer;
       }
       .input-mono { @apply font-mono; }
 
       /* ---- Tables ---- */
-      .table { @apply w-full text-sm border-collapse; }
+      .table { @apply w-full text-[13px] border-collapse; }
       .table thead th {
-        @apply text-left text-[11px] font-semibold uppercase tracking-wider
-               text-slate-500 px-3 py-2.5 bg-slate-50 border-b border-slate-200;
+        @apply text-left text-[10.5px] font-semibold uppercase tracking-[0.06em]
+               text-slate-500 px-4 py-2.5 bg-slate-50/60 border-b border-slate-200/80;
       }
-      .table tbody td { @apply px-3 py-2.5 border-b border-slate-100 align-middle; }
-      .table tbody tr:hover { @apply bg-slate-50/50; }
+      .table thead th:first-child { @apply pl-6; }
+      .table thead th:last-child  { @apply pr-6; }
+      .table tbody td { @apply px-4 py-3 border-b border-slate-100 align-middle text-slate-700; }
+      .table tbody td:first-child { @apply pl-6; }
+      .table tbody td:last-child  { @apply pr-6; }
+      .table tbody tr:hover { @apply bg-slate-50/70; }
       .table tbody tr:last-child td { @apply border-b-0; }
       .table .num { @apply text-right tabular-nums; }
       .table-clean thead th { @apply bg-transparent border-b border-slate-200; }
@@ -137,38 +145,38 @@
 
       /* ---- Sidebar ---- */
       .sidebar {
-        @apply w-64 shrink-0 bg-white border-r border-slate-200
+        @apply w-64 shrink-0 border-r border-slate-200/70
                flex flex-col h-screen sticky top-0;
+        background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
       }
       .sidebar-brand {
-        @apply flex items-center gap-3 px-5 py-5 border-b border-slate-200;
+        @apply flex items-center gap-3 px-5 py-5 border-b border-slate-200/70;
       }
       .brand-mark {
-        @apply w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700
-               flex items-center justify-center text-white font-bold text-sm shadow-sm;
+        @apply w-9 h-9 rounded-xl
+               flex items-center justify-center text-white font-bold text-[13px];
       }
-      .nav-list { @apply flex-1 overflow-y-auto py-4 px-3 space-y-6; }
+      .nav-list { @apply flex-1 overflow-y-auto py-4 px-3 space-y-5; }
       .nav-group-title {
-        @apply px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400;
+        @apply px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-slate-400;
       }
       .nav-item {
-        @apply flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm
-               text-slate-600 hover:bg-slate-100 hover:text-slate-900
-               transition-colors;
+        @apply flex items-center gap-2.5 px-3 py-[7px] rounded-md text-[13.5px]
+               text-slate-600 hover:bg-slate-100/80 hover:text-slate-900;
+        transition: background-color 150ms ease, color 150ms ease;
       }
       .nav-item.active {
         @apply bg-brand-50 text-brand-700 font-medium;
       }
       .nav-item.active svg { @apply text-brand-600; }
-      .nav-item svg { @apply w-4 h-4 text-slate-400 shrink-0; }
-      .sidebar-footer { @apply border-t border-slate-200 px-4 py-3; }
+      .nav-item svg { @apply w-[15px] h-[15px] text-slate-400 shrink-0; }
+      .sidebar-footer { @apply border-t border-slate-200/70 px-4 py-3.5; }
 
       /* ---- Misc utilities ---- */
-      .kv { @apply grid gap-y-1.5 text-sm; grid-template-columns: 9rem 1fr; }
+      .kv { @apply grid gap-y-2 text-[13px]; grid-template-columns: 9rem 1fr; }
       .kv dt { @apply text-slate-500; }
-      .kv dd { @apply text-slate-900; }
+      .kv dd { @apply text-slate-800; }
 
-      .empty-state { @apply text-center py-10 text-slate-500 text-sm; }
       .divider { @apply border-t border-slate-200 my-6; }
     }
   </style>
@@ -275,10 +283,35 @@
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
-      <main class="flex-1 px-8 py-8 max-w-6xl w-full mx-auto">
+      <main class="flex-1 px-10 py-10 max-w-[88rem] w-full mx-auto">
         {% block content %}{% endblock %}
       </main>
     </div>
   </div>
+
+  <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    // Set Chart.js global theme so every chart on the site looks consistent.
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.Chart) {
+        Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = "#64748b";              // slate-500
+        Chart.defaults.borderColor = "rgba(226, 232, 240, 0.8)"; // slate-200/80
+        Chart.defaults.plugins.legend.labels.boxWidth = 10;
+        Chart.defaults.plugins.legend.labels.boxHeight = 10;
+        Chart.defaults.plugins.legend.labels.padding = 14;
+        Chart.defaults.plugins.tooltip.backgroundColor = "rgba(15, 23, 42, 0.94)";
+        Chart.defaults.plugins.tooltip.titleColor = "#f8fafc";
+        Chart.defaults.plugins.tooltip.bodyColor = "#cbd5e1";
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
+        Chart.defaults.plugins.tooltip.displayColors = false;
+        Chart.defaults.elements.bar.borderRadius = 4;
+      }
+    });
+  </script>
 </body>
 </html>

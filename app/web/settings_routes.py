@@ -93,7 +93,7 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
         "groups": rows,
         "saved": saved,
     }
-    return templates.TemplateResponse("settings.html", ctx)
+    return templates.TemplateResponse(request, "settings.html", ctx)
 
 
 @router.post("/settings")

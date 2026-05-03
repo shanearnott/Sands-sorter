@@ -53,7 +53,17 @@
       </tbody>
     </table>
   {% else %}
-    <div class="empty-state">No moves yet.</div>
+    <div class="card-body">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+        <div class="empty-title">No moves yet</div>
+        <div class="empty-body">
+          Documents you file via <a href="/upload" class="link-action">upload</a> or
+          <a href="/import" class="link-action">import</a> will land here, with their
+          full Drive path and classification source.
+        </div>
+      </div>
+    </div>
   {% endif %}
 </section>
 {% endblock %}

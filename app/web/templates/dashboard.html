@@ -4,21 +4,77 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Latest filing activity.</p>
+    <p class="page-subtitle">Filing activity over the last 30 days.</p>
   </div>
   <div class="flex gap-2">
-    <a href="/upload" class="btn btn-primary">Upload</a>
+    <a href="/upload" class="btn btn-primary">
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Upload
+    </a>
     {% if not local_mode %}
       <a href="/import" class="btn btn-secondary">Import from Drive</a>
     {% endif %}
   </div>
 </div>
 
+{% set filed_delta = (kpis.filed_30 - kpis.filed_30_prev) if kpis else 0 %}
+<div class="kpi-row mb-7">
+  <div class="kpi">
+    <div class="kpi-label">Filed · 30 days</div>
+    <div class="kpi-value">{{ kpis.filed_30 if kpis else 0 }}</div>
+    <div class="kpi-meta">
+      {% if filed_delta > 0 %}
+        <span class="kpi-trend up">↑ {{ filed_delta }}</span> vs prior 30
+      {% elif filed_delta < 0 %}
+        <span class="kpi-trend down">↓ {{ -filed_delta }}</span> vs prior 30
+      {% else %}
+        <span class="kpi-trend flat">— flat</span> vs prior 30
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-label">Needs review</div>
+    <div class="kpi-value">{{ kpis.unsorted_open if kpis else 0 }}</div>
+    <div class="kpi-meta">
+      {% if kpis and kpis.unsorted_open %}
+        <a href="/unsorted" class="link-action text-[12px]">Reassign →</a>
+      {% else %}
+        <strong>All clear</strong>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-label">Income · 30 days</div>
+    <div class="kpi-value">${{ '%.2f'|format((kpis.income_30_cents or 0) / 100) }}</div>
+    <div class="kpi-meta">across filed documents</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-label">Expense · 30 days</div>
+    <div class="kpi-value">${{ '%.2f'|format((kpis.expense_30_cents or 0) / 100) }}</div>
+    <div class="kpi-meta">
+      Net
+      {% if kpis %}
+        {% if kpis.net_30_cents >= 0 %}
+          <span class="kpi-trend up">+${{ '%.2f'|format(kpis.net_30_cents / 100) }}</span>
+        {% else %}
+          <span class="kpi-trend down">-${{ '%.2f'|format(-kpis.net_30_cents / 100) }}</span>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 <section class="card">
   <div class="card-header">
-    <h2 class="card-title">Recent documents</h2>
+    <div>
+      <h2 class="card-title">Recent documents</h2>
+      <p class="card-subtitle">Last 20 items processed.</p>
+    </div>
     {% if recent %}
-      <a href="/moves" class="link-action">View all</a>
+      <a href="/moves" class="link-action">View all →</a>
     {% endif %}
   </div>
   {% if recent %}
@@ -36,16 +92,16 @@
         {% for d in recent %}
           <tr>
             <td class="text-slate-500 whitespace-nowrap">{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td class="font-medium text-slate-900">{{ d.original_filename }}</td>
-            <td class="text-slate-600">{{ d.drive_path or '—' }}</td>
+            <td class="font-medium text-slate-900 max-w-xs truncate">{{ d.original_filename }}</td>
+            <td class="text-slate-500 font-mono text-[12px] max-w-md truncate">{{ d.drive_path or '—' }}</td>
             <td><span class="badge badge-neutral">{{ d.classifier.value }}</span></td>
             <td>
               {% if d.status.value == 'filed' %}
-                <span class="badge badge-success">filed</span>
+                <span class="pill ok">filed</span>
               {% elif d.status.value == 'unsorted' %}
-                <span class="badge badge-warning">unsorted</span>
+                <span class="pill warn">unsorted</span>
               {% else %}
-                <span class="badge badge-danger">{{ d.status.value }}</span>
+                <span class="pill bad">{{ d.status.value }}</span>
               {% endif %}
             </td>
           </tr>
@@ -53,9 +109,15 @@
       </tbody>
     </table>
   {% else %}
-    <div class="empty-state">
-      No documents filed yet. Try the
-      <a class="link-action" href="/upload">manual upload</a>.
+    <div class="card-body">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+        <div class="empty-title">No documents yet</div>
+        <div class="empty-body">
+          Drop a bill into <a href="/upload" class="link-action">Manual upload</a> or
+          start an <a href="/import" class="link-action">Import job</a> to see activity here.
+        </div>
+      </div>
     </div>
   {% endif %}
 </section>

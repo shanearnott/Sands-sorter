@@ -56,9 +56,7 @@ def overview_page(
         reverse=True,
     )
     scopes = list(db.scalars(select(Scope).order_by(Scope.kind, Scope.name)))
-    return templates.TemplateResponse(
-        "overview.html",
-        _ctx(request, fy=fy, fys=fys, scopes=scopes),
+    return templates.TemplateResponse(request, "overview.html", _ctx(request, fy=fy, fys=fys, scopes=scopes),
     )
 
 

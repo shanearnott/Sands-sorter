@@ -54,9 +54,7 @@ def vendors_list(
     items = list(db.scalars(select(Vendor).order_by(Vendor.name)))
     scopes = list(db.scalars(select(Scope).where(Scope.active.is_(True)).order_by(Scope.kind, Scope.name)))
     categories = list(db.scalars(select(Category).order_by(Category.name)))
-    return templates.TemplateResponse(
-        "vendors.html",
-        _ctx(
+    return templates.TemplateResponse(request, "vendors.html", _ctx(
             request,
             vendors=items,
             scopes=scopes,
@@ -111,9 +109,7 @@ def sources_list(
 ):
     items = list(db.scalars(select(Source).order_by(Source.kind, Source.label)))
     settings = get_settings()
-    return templates.TemplateResponse(
-        "sources.html",
-        _ctx(
+    return templates.TemplateResponse(request, "sources.html", _ctx(
             request,
             sources=items,
             kinds=list(SourceKind),
@@ -193,9 +189,7 @@ def unsorted_list(
     )
     scopes = list(db.scalars(select(Scope).where(Scope.active.is_(True)).order_by(Scope.kind, Scope.name)))
     categories = list(db.scalars(select(Category).order_by(Category.name)))
-    return templates.TemplateResponse(
-        "unsorted.html",
-        _ctx(
+    return templates.TemplateResponse(request, "unsorted.html", _ctx(
             request,
             docs=docs,
             scopes=scopes,

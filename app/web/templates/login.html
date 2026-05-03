@@ -1,29 +1,79 @@
-{% extends "base.html" %}
-{% block title %}Sign in · Sands-sorter{% endblock %}
-{% block content %}
-<div class="max-w-md mx-auto mt-12">
-  <div class="card-padded text-center">
-    <div class="brand-mark w-12 h-12 mx-auto mb-4 text-base">SS</div>
-    <h1 class="page-title mb-2">Sands-sorter</h1>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Sands-sorter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { font-family: 'Inter', system-ui, sans-serif; }
+    body {
+      background:
+        radial-gradient(1200px 800px at 90% -10%, rgba(99,102,241,0.10), transparent 60%),
+        radial-gradient(900px 700px at -10% 110%, rgba(99,102,241,0.08), transparent 60%),
+        #f8fafc;
+      min-height: 100vh;
+    }
+    .auth-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(226, 232, 240, 0.85);
+      box-shadow:
+        0 24px 60px -20px rgba(15, 23, 42, 0.18),
+        0 8px 22px -10px rgba(15, 23, 42, 0.10);
+    }
+    .brand-mark-lg {
+      width: 56px; height: 56px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 18px; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #818cf8 0%, #4338ca 100%);
+      box-shadow:
+        inset 0 1px 0 0 rgba(255,255,255,0.2),
+        0 8px 16px -4px rgba(67, 56, 202, 0.35);
+    }
+  </style>
+</head>
+<body class="text-slate-900">
+  <div class="min-h-screen flex items-center justify-center px-6">
+    <div class="w-full max-w-[26rem]">
+      <div class="auth-card rounded-2xl px-8 py-9 text-center">
+        <div class="brand-mark-lg mx-auto mb-5">SS</div>
+        <h1 class="text-[1.65rem] font-semibold tracking-tight text-slate-900">Sands-sorter</h1>
+        <p class="mt-1.5 text-[13.5px] text-slate-500">Automated bill filing for the Sands household.</p>
 
-    {% if local_mode %}
-      <p class="text-sm text-slate-600 mb-6">
-        Running in <span class="badge badge-warning">local mode</span><br>
-        No sign-in required. Configure Google integration in Settings to enable cloud features.
-      </p>
-      <div class="flex gap-2 justify-center">
-        <a href="/" class="btn btn-primary">Open dashboard</a>
-        <a href="/settings" class="btn btn-secondary">Settings</a>
+        {% if local_mode %}
+          <div class="mt-6 mb-6 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-left text-[13px] text-amber-900">
+            <div class="font-semibold mb-0.5">Running in local mode</div>
+            <div class="text-amber-800/90">No sign-in required. Add a Google OAuth client in <span class="font-medium">Settings</span> to enable cloud features.</div>
+          </div>
+          <div class="flex gap-2">
+            <a href="/" class="btn btn-primary flex-1 justify-center">Open dashboard</a>
+            <a href="/settings" class="btn btn-secondary">Settings</a>
+          </div>
+        {% else %}
+          <a href="/auth/login"
+             class="btn btn-primary mt-7 w-full justify-center text-[14px] py-2.5">
+            <svg class="w-[15px] h-[15px]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
+            </svg>
+            Sign in with Google
+          </a>
+          <p class="mt-5 text-[12px] text-slate-500 leading-relaxed">
+            Access is limited to the email allowlist configured in
+            <code class="text-[11px] bg-slate-100 px-1 py-0.5 rounded">ALLOWED_EMAILS</code>.
+          </p>
+        {% endif %}
       </div>
-    {% else %}
-      <p class="text-sm text-slate-600 mb-6">Automated bill filing for household properties.</p>
-      <a href="/auth/login" class="btn btn-primary w-full justify-center">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
-        </svg>
-        Sign in with Google
-      </a>
-    {% endif %}
+
+      <p class="mt-6 text-center text-[12px] text-slate-400">
+        Property bills, scanned snail mail, and rent receipts — sorted automatically.
+      </p>
+    </div>
   </div>
-</div>
-{% endblock %}
+</body>
+</html>
